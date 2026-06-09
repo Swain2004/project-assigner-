@@ -1,5 +1,30 @@
 const { query } = require('../config/database');
 const { createNotification, logActivity } = require('../utils/notificationHelper');
+const { sendEmail, buildTaskAssignmentEmail } = require('../config/mailer');
+
+async function sendTaskAssignmentEmail({ assignedToId, taskTitle, taskDescription, projectName, priority, dueDate, assignedById }) {
+  try {
+    const [recipientResult, assignerResult] = await Promise.all([
+      query('SELECT name, email FROM users WHERE id = $1', [assignedToId]),
+      assignedById ? query('SELECT name FROM users WHERE id = $1', [assignedById]) : Promise.resolve({ rows: [] }),
+    ]);
+    if (recipientResult.rows.length === 0) return;
+    const recipient = recipientResult.rows[0];
+    const assignerName = assignerResult.rows[0]?.name || null;
+    const { html, text } = buildTaskAssignmentEmail({
+      recipientName: recipient.name,
+      taskTitle,
+      taskDescription,
+      projectName,
+      priority,
+      dueDate,
+      assignedByName: assignerName,
+    });
+    await sendEmail({ to: recipient.email, subject: `New Task Assigned: ${taskTitle}`, html, text });
+  } catch (err) {
+    console.error('Task assignment email error:', err.message);
+  }
+}
 
 async function notifyMentions(description, taskId, taskTitle, projectId, createdBy) {
   if (!description) return;
@@ -159,13 +184,23 @@ async function createTask(req, res, next) {
       await createNotification({
         userId: assigned_to,
         title: 'New Task Assigned',
-        message: `You have been assigned a new task: "${title}" in project "${projectCheck.rows[0].name}"`,
+        message: `You have been assigned "${title}" in project "${projectCheck.rows[0].name}"`,
         type: 'task_assigned',
         relatedId: task.id,
         relatedType: 'task',
         actionUrl: `/projects/${project_id}`,
         createdBy: userId,
+        sendEmailNotification: false,
       });
+      sendTaskAssignmentEmail({
+        assignedToId: assigned_to,
+        taskTitle: title,
+        taskDescription: description,
+        projectName: projectCheck.rows[0].name,
+        priority: priority || 'medium',
+        dueDate: due_date || null,
+        assignedById: userId,
+      }).catch(() => {});
     }
 
     await notifyMentions(description, task.id, title, project_id, userId);
@@ -234,13 +269,23 @@ async function updateTask(req, res, next) {
       await createNotification({
         userId: assigned_to,
         title: 'Task Assigned to You',
-        message: `You have been assigned the task "${task.title}" in project "${prev.project_name}"`,
+        message: `You have been assigned "${task.title}" in project "${prev.project_name}"`,
         type: 'task_assigned',
         relatedId: task.id,
         relatedType: 'task',
         actionUrl: `/projects/${task.project_id}`,
         createdBy: userId,
+        sendEmailNotification: false,
       });
+      sendTaskAssignmentEmail({
+        assignedToId: assigned_to,
+        taskTitle: task.title,
+        taskDescription: description || prev.description,
+        projectName: prev.project_name,
+        priority: priority || prev.priority,
+        dueDate: due_date || prev.due_date,
+        assignedById: userId,
+      }).catch(() => {});
     }
 
     if (status && status !== prev.status) {

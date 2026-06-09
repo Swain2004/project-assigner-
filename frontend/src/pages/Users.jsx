@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import Modal from '../components/Modal';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { getCached, setCached, invalidate } from '../api/cache';
 
 const ROLE_STYLE = { admin: 'bg-purple-100 text-purple-700', employee: 'bg-blue-100 text-blue-600' };
 
@@ -18,7 +19,7 @@ function CreateUserModal({ open, onClose, onCreated }) {
     setLoading(true); setError('');
     try {
       const res = await api.post('/users', form);
-      onCreated(res.data.user); onClose();
+      invalidate('/users'); onCreated(res.data.user); onClose();
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create user');
     } finally { setLoading(false); }
@@ -55,7 +56,7 @@ function EditUserModal({ open, onClose, user: targetUser, onUpdated }) {
     setLoading(true); setError('');
     try {
       const res = await api.put(`/users/${targetUser.id}`, form);
-      onUpdated(res.data.user); onClose();
+      invalidate('/users'); onUpdated(res.data.user); onClose();
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to update user');
     } finally { setLoading(false); }
@@ -89,8 +90,8 @@ function EditUserModal({ open, onClose, user: targetUser, onUpdated }) {
 
 export default function Users() {
   const { user: currentUser } = useAuth();
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState(() => getCached('/users') || []);
+  const [loading, setLoading] = useState(() => !getCached('/users'));
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [showCreate, setShowCreate] = useState(false);
@@ -100,6 +101,7 @@ export default function Users() {
 
   async function fetchUsers() {
     const res = await api.get('/users');
+    setCached('/users', res.data.users);
     setUsers(res.data.users);
     setLoading(false);
   }

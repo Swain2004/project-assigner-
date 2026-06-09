@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { FolderKanban, CheckSquare, TrendingUp, Users, ArrowRight, Clock, Circle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
+import { getCached, setCached } from '../api/cache';
 import { formatDistanceToNow } from 'date-fns';
 
 const STATUS_COLORS = {
@@ -100,11 +101,11 @@ const ACTION_LABELS = {
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const [stats, setStats] = useState(null);
-  const [myTasks, setMyTasks] = useState([]);
-  const [projects, setProjects] = useState([]);
-  const [activity, setActivity] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState(() => getCached('dashboard')?.stats || null);
+  const [myTasks, setMyTasks] = useState(() => getCached('dashboard')?.myTasks || []);
+  const [projects, setProjects] = useState(() => getCached('dashboard')?.projects || []);
+  const [activity, setActivity] = useState(() => getCached('dashboard')?.activity || []);
+  const [loading, setLoading] = useState(() => !getCached('dashboard'));
 
   useEffect(() => {
     fetchData();
@@ -118,10 +119,12 @@ export default function Dashboard() {
         api.get('/projects'),
       ]);
 
-      setStats(statsRes.data.stats);
-      setActivity(statsRes.data.recent_activity || []);
-      setMyTasks(tasksRes.data.tasks.filter((t) => t.status !== 'done').slice(0, 6));
-      setProjects(projectsRes.data.projects.slice(0, 5));
+      const s = statsRes.data.stats;
+      const act = statsRes.data.recent_activity || [];
+      const mt = tasksRes.data.tasks.filter((t) => t.status !== 'done').slice(0, 6);
+      const proj = projectsRes.data.projects.slice(0, 5);
+      setCached('dashboard', { stats: s, activity: act, myTasks: mt, projects: proj });
+      setStats(s); setActivity(act); setMyTasks(mt); setProjects(proj);
     } catch (err) {
       console.error(err);
     } finally {

@@ -111,11 +111,18 @@ async function searchUsers(req, res, next) {
       return res.json({ users: [] });
     }
 
+    const contains = `%${q.trim()}%`;
+    const startsWith = `${q.trim()}%`;
     const result = await query(
       `SELECT id, name, email, role, avatar_url, department FROM users
        WHERE is_active = true AND (name ILIKE $1 OR email ILIKE $1)
-       ORDER BY name ASC LIMIT 10`,
-      [`%${q.trim()}%`]
+       ORDER BY
+         CASE WHEN name ILIKE $2 THEN 0
+              WHEN name ILIKE $1 THEN 1
+              ELSE 2 END,
+         name ASC
+       LIMIT 10`,
+      [contains, startsWith]
     );
     res.json({ users: result.rows });
   } catch (error) {
