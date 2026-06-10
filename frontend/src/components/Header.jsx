@@ -20,7 +20,7 @@ export default function Header({ onMenuClick, onNotifClick }) {
     (location.pathname.startsWith('/projects/') ? 'Project Details' : 'Project Assigner');
 
   return (
-    <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-ios border-b border-gray-150/80 px-6 lg:px-8 h-16 flex items-center gap-4">
+    <header className="sticky top-0 z-30 bg-white/70 backdrop-blur-ios-lg border-b border-gray-200/50 px-4 sm:px-6 lg:px-8 h-[72px] flex items-center gap-4 transition-all duration-200">
       <button
         onClick={onMenuClick}
         className="lg:hidden p-2 -ml-2 rounded-ios text-gray-500 hover:bg-gray-100 transition-colors"

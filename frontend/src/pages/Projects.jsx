@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Plus, FolderKanban, Search, Users, CheckSquare, Calendar, MoreHorizontal } from 'lucide-react';
 import { format } from 'date-fns';
 import Modal from '../components/Modal';
+import AppleSelect from '../components/AppleSelect';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { getCached, setCached, invalidate } from '../api/cache';
@@ -12,16 +13,16 @@ const PRIORITY_OPTIONS = ['low', 'medium', 'high'];
 const COLOR_OPTIONS = ['#007AFF', '#5856D6', '#30D158', '#FF9F0A', '#FF453A', '#AF52DE', '#5AC8FA', '#FF2D55'];
 
 const STATUS_STYLE = {
-  active: 'bg-green-100 text-green-700',
-  on_hold: 'bg-orange-100 text-orange-700',
-  completed: 'bg-blue-100 text-blue-700',
-  archived: 'bg-gray-100 text-gray-500',
+  active: 'bg-green-500/10 text-green-600',
+  on_hold: 'bg-orange-500/10 text-orange-600',
+  completed: 'bg-blue-500/10 text-blue-600',
+  archived: 'bg-gray-100/80 text-gray-500',
 };
 
 const PRIORITY_STYLE = {
-  low: 'bg-gray-100 text-gray-500',
-  medium: 'bg-blue-100 text-blue-600',
-  high: 'bg-orange-100 text-orange-600',
+  low: 'bg-gray-100/80 text-gray-500',
+  medium: 'bg-blue-500/10 text-blue-600',
+  high: 'bg-orange-500/10 text-orange-600',
 };
 
 function ProjectCard({ project, onDelete }) {
@@ -30,71 +31,69 @@ function ProjectCard({ project, onDelete }) {
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
   return (
-    <div className="card overflow-hidden hover:shadow-apple-md transition-shadow duration-200 group">
-      <div className="h-1.5" style={{ background: project.color || '#007AFF' }} />
-      <div className="p-5">
-        <div className="flex items-start justify-between gap-2 mb-3">
-          <Link to={`/projects/${project.id}`} className="flex-1 min-w-0">
-            <h3 className="font-bold text-gray-900 text-base leading-snug group-hover:text-blue-500 transition-colors truncate">
-              {project.name}
-            </h3>
-          </Link>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <span className={`badge ${STATUS_STYLE[project.status] || 'bg-gray-100 text-gray-500'} capitalize`}>
-              {project.status?.replace('_', ' ')}
-            </span>
+    <Link to={`/projects/${project.id}`} className="bg-white rounded-[28px] shadow-[0_2px_12px_rgb(0,0,0,0.02)] border border-gray-100/60 overflow-hidden hover:shadow-[0_16px_40px_rgb(0,0,0,0.06)] hover:-translate-y-1.5 transition-all duration-400 group flex flex-col h-full relative">
+      <div className="p-6 flex flex-col flex-1">
+        
+        <div className="flex items-start justify-between gap-4 mb-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-2.5">
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-[6px] uppercase tracking-widest ${STATUS_STYLE[project.status] || 'bg-gray-100 text-gray-500'}`}>
+                {project.status?.replace('_', ' ')}
+              </span>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-[6px] uppercase tracking-widest ${PRIORITY_STYLE[project.priority]}`}>
+                {project.priority}
+              </span>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-3.5 h-3.5 rounded-full flex-shrink-0 shadow-[0_2px_4px_rgba(0,0,0,0.1)] mt-1.5" style={{ background: project.color || '#007AFF' }} />
+              <h3 className="font-bold text-gray-900 text-[20px] tracking-tight leading-tight group-hover:text-blue-500 transition-colors line-clamp-2">
+                {project.name}
+              </h3>
+            </div>
           </div>
         </div>
 
         {project.description && (
-          <p className="text-xs text-gray-500 leading-relaxed line-clamp-2 mb-4">{project.description}</p>
+          <p className="text-[14px] text-gray-500 leading-relaxed line-clamp-2 mb-6">{project.description}</p>
         )}
 
-        <div className="space-y-3">
+        <div className="mt-auto space-y-5">
+          {/* Huge Progress Bar */}
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-xs text-gray-400">Progress</span>
-              <span className="text-xs font-semibold text-gray-600">{pct}%</span>
+            <div className="flex items-end justify-between mb-2 pl-1">
+              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Progress</span>
+              <span className="text-[16px] font-extrabold tracking-tight" style={{ color: project.color || '#007AFF' }}>{pct}%</span>
             </div>
-            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-3.5 bg-gray-100 rounded-full overflow-hidden shadow-inner">
               <div
-                className="h-full rounded-full transition-all duration-500"
+                className="h-full rounded-full transition-all duration-1000 ease-out relative overflow-hidden"
                 style={{ width: `${pct}%`, background: project.color || '#007AFF' }}
-              />
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent w-full" style={{ animation: 'shimmer 2s infinite' }}></div>
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-xs text-gray-400">
-            <span className="flex items-center gap-1">
-              <CheckSquare size={12} />
-              {done}/{total} tasks
+          <div className="pt-4 border-t border-gray-100/60 flex items-center justify-between text-[13px] text-gray-400 font-medium">
+            <span className="flex items-center gap-1.5">
+              <CheckSquare size={16} className="text-gray-300 group-hover:text-blue-400 transition-colors" />
+              {done}/{total}
             </span>
-            <span className="flex items-center gap-1">
-              <Users size={12} />
-              {project.member_count || 0} members
+            <span className="flex items-center gap-1.5">
+              <Users size={16} className="text-gray-300 group-hover:text-blue-400 transition-colors" />
+              {project.member_count || 0}
             </span>
             {project.due_date && (
-              <span className="flex items-center gap-1">
-                <Calendar size={12} />
+              <span className="flex items-center gap-1.5">
+                <Calendar size={16} className="text-gray-300 group-hover:text-blue-400 transition-colors" />
                 {format(new Date(project.due_date), 'MMM d')}
               </span>
             )}
           </div>
         </div>
 
-        <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-          <span className={`badge ${PRIORITY_STYLE[project.priority]} capitalize`}>
-            {project.priority} priority
-          </span>
-          <Link
-            to={`/projects/${project.id}`}
-            className="text-xs font-semibold text-blue-500 hover:text-blue-600 transition-colors"
-          >
-            Open
-          </Link>
-        </div>
       </div>
-    </div>
+    </Link>
   );
 }
 
@@ -171,34 +170,36 @@ function CreateProjectModal({ open, onClose, onCreated }) {
           <label className="label">Description</label>
           <textarea className="input-field resize-none" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Brief description of the project..." />
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="label">Status</label>
-            <select className="input-field" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
-              {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
-            </select>
+            <AppleSelect
+              value={form.status}
+              onChange={(e) => setForm({ ...form, status: e.target.value })}
+              options={STATUS_OPTIONS.map((s) => ({ value: s, label: s.replace('_', ' ') }))}
+            />
           </div>
           <div>
             <label className="label">Priority</label>
-            <select className="input-field" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
-              {PRIORITY_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
-            </select>
+            <AppleSelect
+              value={form.priority}
+              onChange={(e) => setForm({ ...form, priority: e.target.value })}
+              options={PRIORITY_OPTIONS.map((p) => ({ value: p, label: p.charAt(0).toUpperCase() + p.slice(1) }))}
+            />
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="label">Due Date</label>
-            <input type="date" className="input-field" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} />
-          </div>
-          <div>
-            <label className="label">Color</label>
-            <div className="flex items-center gap-2 mt-1.5">
-              {COLOR_OPTIONS.map((c) => (
-                <button key={c} type="button" onClick={() => setForm({ ...form, color: c })}
-                  className={`w-7 h-7 rounded-full transition-all ${form.color === c ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : 'hover:scale-105'}`}
-                  style={{ background: c }} />
-              ))}
-            </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div><label className="label">Start Date</label><input type="date" className="input-field" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} /></div>
+          <div><label className="label">Target Date</label><input type="date" className="input-field" value={form.target_date} onChange={(e) => setForm({ ...form, target_date: e.target.value })} /></div>
+        </div>
+        <div>
+          <label className="label">Color</label>
+          <div className="flex items-center gap-2 mt-1.5">
+            {COLOR_OPTIONS.map((c) => (
+              <button key={c} type="button" onClick={() => setForm({ ...form, color: c })}
+                className={`w-7 h-7 rounded-full transition-all ${form.color === c ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : 'hover:scale-105'}`}
+                style={{ background: c }} />
+            ))}
           </div>
         </div>
         <div>
@@ -282,11 +283,11 @@ export default function Projects() {
   });
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
-      <div className="flex items-center justify-between gap-4">
+    <div className="space-y-8 max-w-7xl mx-auto animate-slide-up">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="page-title">Projects</h2>
-          <p className="text-sm text-gray-400 mt-0.5">{projects.length} total projects</p>
+          <p className="text-base text-gray-500 font-medium mt-1">{projects.length} total projects</p>
         </div>
         {user?.role === 'admin' && (
           <button onClick={() => setShowCreate(true)} className="btn-primary">
@@ -295,15 +296,15 @@ export default function Projects() {
         )}
       </div>
 
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input className="input-field pl-10" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search projects..." />
+      <div className="flex items-center gap-4 flex-wrap">
+        <div className="relative flex-1 min-w-[240px] max-w-sm">
+          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input className="input-field pl-12 shadow-sm" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search projects..." />
         </div>
-        <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-ios">
+        <div className="flex items-center bg-gray-200/50 p-1.5 rounded-[20px] backdrop-blur-xl">
           {['all', 'active', 'on_hold', 'completed'].map((f) => (
             <button key={f} onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-[8px] transition-all capitalize ${filter === f ? 'bg-white text-gray-900 shadow-apple-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+              className={`px-5 py-2 text-[14px] font-bold rounded-2xl transition-all duration-300 capitalize ${filter === f ? 'bg-white text-gray-900 shadow-[0_2px_10px_rgba(0,0,0,0.08)]' : 'text-gray-500 hover:text-gray-900'}`}>
               {f === 'all' ? 'All' : f.replace('_', ' ')}
             </button>
           ))}
@@ -332,7 +333,7 @@ export default function Projects() {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filtered.map((p) => <ProjectCard key={p.id} project={p} />)}
         </div>
       )}

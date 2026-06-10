@@ -14,7 +14,7 @@
   }
 
   body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', 'Helvetica Neue', Arial, sans-serif;
     background-color: #f5f5f7;
     color: #1d1d1f;
     line-height: 1.5;
@@ -46,43 +46,56 @@
 
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-500 text-white text-sm font-semibold rounded-ios transition-all duration-200 hover:bg-blue-600 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply relative overflow-hidden inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-b from-blue-500 to-blue-600 text-white text-[15px] font-semibold rounded-full transition-all duration-300 ease-out hover:shadow-[0_8px_20px_rgba(0,122,255,0.3)] hover:-translate-y-0.5 active:scale-[0.97] active:translate-y-0 border border-blue-400/50 shadow-inner-sm;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-gray-100 text-gray-700 text-sm font-semibold rounded-ios transition-all duration-200 hover:bg-gray-150 active:scale-[0.97] disabled:opacity-50;
+    @apply relative overflow-hidden inline-flex items-center justify-center gap-2 px-6 py-3 bg-white/40 backdrop-blur-2xl text-gray-900 text-[15px] font-semibold rounded-full border border-white/60 shadow-[0_4px_16px_rgba(0,0,0,0.04)] transition-all duration-300 ease-out hover:bg-white/60 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] hover:-translate-y-0.5 active:scale-[0.97];
   }
 
   .btn-danger {
-    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-red-500 text-white text-sm font-semibold rounded-ios transition-all duration-200 hover:bg-red-600 active:scale-[0.97] disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-b from-red-500 to-red-600 text-white text-[15px] font-semibold rounded-full transition-all duration-300 ease-out hover:shadow-[0_8px_20px_rgba(255,59,48,0.3)] hover:-translate-y-0.5 active:scale-[0.97] active:translate-y-0 border border-red-400/50 shadow-inner-sm;
   }
 
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-gray-500 text-sm font-medium rounded-ios transition-all duration-200 hover:bg-gray-100 hover:text-gray-700 active:scale-[0.97];
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 text-gray-600 text-[15px] font-semibold rounded-full transition-all duration-200 ease-out hover:bg-black/5 hover:text-gray-900 active:scale-[0.97];
   }
 
   .card {
-    @apply bg-white rounded-ios-lg shadow-apple border border-gray-150/60;
+    @apply bg-white rounded-[24px] shadow-[0_4px_24px_rgba(0,0,0,0.04)] border border-gray-100 transition-all duration-300;
+  }
+
+  .card-hover {
+    @apply hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(0,0,0,0.08)];
   }
 
   .input-field {
-    @apply w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-ios text-sm text-gray-900 placeholder-gray-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white;
+    @apply w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-[14px] font-medium text-gray-900 placeholder-gray-400 transition-all duration-200 ease-out focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 shadow-sm;
+  }
+
+  select.input-field {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.75rem center;
+    background-repeat: no-repeat;
+    background-size: 1.2em 1.2em;
+    padding-right: 2.5rem;
   }
 
   .label {
-    @apply block text-sm font-medium text-gray-600 mb-1.5;
+    @apply block text-[12px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 ml-0.5;
   }
 
   .badge {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold;
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-opacity-10 border border-current border-opacity-10;
   }
 
   .section-title {
-    @apply text-lg font-semibold text-gray-900;
+    @apply text-xl font-bold text-gray-900 tracking-tight;
   }
 
   .page-title {
-    @apply text-2xl font-bold text-gray-900 tracking-tight;
+    @apply text-3xl font-bold text-gray-900 tracking-tight;
   }
 }
 
@@ -97,32 +110,26 @@
   }
 
   .transition-apple {
-    transition: all 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    transition: all 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
 }
 
 
 .notification-panel {
-  animation: slideInRight 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes slideInRight {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
 }
 
 .modal-overlay {
-  animation: fadeIn 0.15s ease;
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .modal-content {
-  animation: scaleIn 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  animation: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes fadeIn {
@@ -131,8 +138,13 @@
 }
 
 @keyframes scaleIn {
-  from { transform: scale(0.95) translateY(-8px); opacity: 0; }
+  from { transform: scale(0.92) translateY(16px); opacity: 0; }
   to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 .file-drop-active {

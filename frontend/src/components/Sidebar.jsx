@@ -28,11 +28,19 @@ function NavItem({ to, icon: Icon, label, end, onClick }) {
       end={end}
       onClick={onClick}
       className={({ isActive }) =>
-        `sidebar-item ${isActive ? 'active' : ''}`
+        `flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[14px] font-medium transition-all duration-200 cursor-pointer ${
+          isActive 
+            ? 'bg-gray-100 text-gray-900 font-semibold' 
+            : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+        }`
       }
     >
-      <Icon size={17} strokeWidth={2} />
-      <span>{label}</span>
+      {({ isActive }) => (
+        <>
+          <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
+          <span>{label}</span>
+        </>
+      )}
     </NavLink>
   );
 }
@@ -47,28 +55,28 @@ export default function Sidebar({ open, onClose }) {
   }
 
   const sidebarContent = (
-    <div className="flex flex-col h-full bg-white border-r border-gray-150 w-64">
-      <div className="px-5 py-5 border-b border-gray-100">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-blue-500 rounded-ios flex items-center justify-center">
-            <Briefcase size={16} className="text-white" strokeWidth={2} />
+    <div className="flex flex-col h-full bg-white w-[260px] border-r border-gray-100">
+      <div className="px-6 py-8">
+        <div className="flex items-center gap-3.5">
+          <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-blue-600 shadow-apple-sm rounded-ios flex items-center justify-center">
+            <Briefcase size={18} className="text-white" strokeWidth={2.5} />
           </div>
           <div>
-            <p className="text-sm font-bold text-gray-900 leading-none">Project</p>
-            <p className="text-xs text-blue-500 font-semibold mt-0.5">Assigner</p>
+            <p className="text-[15px] font-bold text-gray-900 tracking-tight leading-none">Project</p>
+            <p className="text-[12px] text-blue-600 font-semibold mt-1 uppercase tracking-wider">Assigner</p>
           </div>
         </div>
       </div>
 
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+      <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto">
         {navItems.map((item) => (
           <NavItem key={item.to} {...item} onClick={onClose} />
         ))}
 
         {user?.role === 'admin' && (
           <>
-            <div className="px-3 pt-4 pb-1">
-              <p className="text-[10px] font-semibold text-gray-300 uppercase tracking-widest">
+            <div className="px-3 pt-6 pb-2">
+              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">
                 Admin
               </p>
             </div>
@@ -77,32 +85,32 @@ export default function Sidebar({ open, onClose }) {
         )}
       </nav>
 
-      <div className="px-3 py-4 border-t border-gray-100 space-y-0.5">
+      <div className="p-4 space-y-1 border-t border-gray-200/50 bg-white/30">
         <NavLink
           to="/profile"
           onClick={onClose}
-          className={({ isActive }) => `sidebar-item ${isActive ? 'active' : ''}`}
+          className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-ios text-[13px] font-medium transition-all duration-200 ease-out active:scale-95 cursor-pointer ${isActive ? 'bg-blue-500/10 shadow-sm' : 'hover:bg-black/5'}`}
         >
-          <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+          <div className="w-7 h-7 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm">
             {user?.avatar_url ? (
-              <img src={user.avatar_url} alt="" className="w-6 h-6 rounded-full object-cover" />
+              <img src={user.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover" />
             ) : (
-              <span className="text-white text-[10px] font-bold">
+              <span className="text-white text-xs font-bold">
                 {user?.name?.charAt(0)?.toUpperCase()}
               </span>
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-800 truncate">{user?.name}</p>
-            <p className="text-[11px] text-gray-400 capitalize">{user?.role}</p>
+            <p className="text-[13px] font-semibold text-gray-900 truncate">{user?.name}</p>
+            <p className="text-[11px] text-gray-500 font-medium capitalize">{user?.role}</p>
           </div>
         </NavLink>
 
         <button
           onClick={handleLogout}
-          className="sidebar-item w-full text-red-500 hover:text-red-600 hover:bg-red-50"
+          className="flex w-full items-center gap-3 px-3 py-2.5 rounded-ios text-[13px] font-semibold text-red-500 hover:text-red-600 hover:bg-red-50 transition-all duration-200 ease-out active:scale-95 cursor-pointer"
         >
-          <LogOut size={17} strokeWidth={2} />
+          <LogOut size={18} strokeWidth={2.5} />
           <span>Sign Out</span>
         </button>
       </div>

@@ -35,8 +35,8 @@ export default function NotificationPanel({ onClose }) {
   }
 
   return (
-    <div className="notification-panel fixed right-0 top-0 h-full w-full sm:w-[400px] bg-white shadow-apple-lg z-50 flex flex-col">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-150">
+    <div className="notification-panel fixed right-0 top-0 h-full w-full sm:w-[400px] bg-white/80 backdrop-blur-ios-lg shadow-apple-lg z-50 flex flex-col border-l border-white/50">
+      <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200/50">
         <div>
           <h2 className="text-base font-bold text-gray-900">Notifications</h2>
           {unreadCount > 0 && (

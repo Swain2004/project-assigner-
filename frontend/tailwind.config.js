@@ -52,11 +52,11 @@ export default {
       },
       fontFamily: {
         sans: [
-          'Inter',
           '-apple-system',
           'BlinkMacSystemFont',
           'SF Pro Display',
           'SF Pro Text',
+          'Inter',
           'Helvetica Neue',
           'Arial',
           'sans-serif',

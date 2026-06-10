@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Users as UsersIcon, Plus, Search, Edit2, UserX, UserCheck, Shield, User } from 'lucide-react';
+import { Users as UsersIcon, Plus, Search, Edit2, UserX, UserCheck, Shield, User, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 import Modal from '../components/Modal';
+import AppleSelect from '../components/AppleSelect';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { getCached, setCached, invalidate } from '../api/cache';
@@ -31,8 +32,11 @@ function CreateUserModal({ open, onClose, onCreated }) {
         <div><label className="label">Full Name *</label><input className="input-field" value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} placeholder="Full name" required /></div>
         <div><label className="label">Email *</label><input type="email" className="input-field" value={form.email} onChange={(e) => setForm({...form, email: e.target.value})} placeholder="email@company.com" required /></div>
         <div><label className="label">Password *</label><input type="password" className="input-field" value={form.password} onChange={(e) => setForm({...form, password: e.target.value})} placeholder="Min. 6 characters" minLength={6} required /></div>
-        <div className="grid grid-cols-2 gap-3">
-          <div><label className="label">Role</label><select className="input-field" value={form.role} onChange={(e) => setForm({...form, role: e.target.value})}><option value="employee">Employee</option><option value="admin">Admin</option></select></div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="label">Role</label>
+            <AppleSelect value={form.role} onChange={(e) => setForm({...form, role: e.target.value})} options={[{value: 'employee', label: 'Employee'}, {value: 'admin', label: 'Admin'}]} />
+          </div>
           <div><label className="label">Department</label><input className="input-field" value={form.department} onChange={(e) => setForm({...form, department: e.target.value})} placeholder="e.g. Engineering" /></div>
         </div>
         {error && <p className="text-sm text-red-500">{error}</p>}
@@ -67,8 +71,11 @@ function EditUserModal({ open, onClose, user: targetUser, onUpdated }) {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div><label className="label">Full Name</label><input className="input-field" value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} /></div>
         <div><label className="label">Email</label><input type="email" className="input-field" value={form.email} onChange={(e) => setForm({...form, email: e.target.value})} /></div>
-        <div className="grid grid-cols-2 gap-3">
-          <div><label className="label">Role</label><select className="input-field" value={form.role} onChange={(e) => setForm({...form, role: e.target.value})}><option value="employee">Employee</option><option value="admin">Admin</option></select></div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="label">Role</label>
+            <AppleSelect value={form.role} onChange={(e) => setForm({...form, role: e.target.value})} options={[{value: 'employee', label: 'Employee'}, {value: 'admin', label: 'Admin'}]} />
+          </div>
           <div><label className="label">Department</label><input className="input-field" value={form.department} onChange={(e) => setForm({...form, department: e.target.value})} /></div>
         </div>
         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-ios">
@@ -117,7 +124,7 @@ export default function Users() {
 
   return (
     <div className="space-y-5 max-w-5xl mx-auto animate-fade-in">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 items-start">
         <div>
           <h2 className="page-title">Users</h2>
           <p className="text-sm text-gray-400 mt-0.5">{users.length} total · {activeCount} active · {adminCount} admins</p>
@@ -150,36 +157,30 @@ export default function Users() {
           <p className="text-sm font-medium text-gray-500">No users found</p>
         </div>
       ) : (
-        <div className="card overflow-hidden">
-          <div className="divide-y divide-gray-100">
-            {filtered.map((u) => (
-              <div key={u.id} className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors group">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${u.is_active ? 'bg-blue-500' : 'bg-gray-300'}`}>
-                  {u.avatar_url ? <img src={u.avatar_url} className="w-10 h-10 rounded-full object-cover" alt="" /> : <span className="text-white font-bold text-sm">{u.name.charAt(0)}</span>}
-                </div>
-                <div className="flex-1 min-w-0">
+        <div className="bg-white rounded-[20px] shadow-[0_2px_12px_rgba(0,0,0,0.03)] border border-gray-100/50 overflow-hidden">
+          {filtered.map((u, i) => (
+            <div key={u.id} className="flex items-center pl-4 sm:pl-5 pr-4 py-1.5 hover:bg-gray-50 transition-colors group cursor-pointer" onClick={() => setEditTarget(u)}>
+              <div className={`w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 mr-3 sm:mr-4 shadow-sm ${u.is_active ? 'bg-gradient-to-b from-blue-400 to-blue-500' : 'bg-gradient-to-b from-gray-300 to-gray-400'}`}>
+                {u.avatar_url ? <img src={u.avatar_url} className="w-11 h-11 rounded-full object-cover" alt="" /> : <span className="text-white font-semibold text-[16px] tracking-tight">{u.name.charAt(0).toUpperCase()}</span>}
+              </div>
+              <div className={`flex-1 flex items-center justify-between py-2.5 sm:py-3.5 min-w-0 ${i !== filtered.length - 1 ? 'border-b border-gray-100/80' : ''}`}>
+                <div className="flex-1 min-w-0 pr-4">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-bold text-gray-900">{u.name}</p>
-                    {u.id === currentUser?.id && <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full font-semibold">You</span>}
-                    {!u.is_active && <span className="text-[10px] bg-red-100 text-red-500 px-1.5 py-0.5 rounded-full font-semibold">Inactive</span>}
+                    <p className="text-[16px] sm:text-[17px] font-medium text-gray-900 tracking-tight truncate">{u.name}</p>
+                    {u.id === currentUser?.id && <span className="text-[10px] bg-gray-100/80 text-gray-500 px-2 py-0.5 rounded-full font-medium tracking-wide">You</span>}
+                    {!u.is_active && <span className="text-[10px] bg-red-100/80 text-red-500 px-2 py-0.5 rounded-full font-medium tracking-wide">Inactive</span>}
                   </div>
-                  <p className="text-xs text-gray-500">{u.email}{u.department ? ` · ${u.department}` : ''}</p>
+                  <p className="text-[13px] sm:text-[14px] text-gray-500 truncate mt-0.5">{u.email}{u.department ? ` · ${u.department}` : ''}</p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className={`badge capitalize ${ROLE_STYLE[u.role]}`}>
-                    {u.role === 'admin' ? <Shield size={10} className="inline mr-1" /> : <User size={10} className="inline mr-1" />}
+                <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                  <span className={`text-[12px] sm:text-[13px] font-semibold px-2.5 py-0.5 sm:py-1 rounded-full capitalize ${u.role === 'admin' ? 'bg-purple-500/10 text-purple-600' : 'bg-gray-100/80 text-gray-500'}`}>
                     {u.role}
                   </span>
-                  <span className="text-xs text-gray-400 hidden sm:block">Joined {format(new Date(u.created_at), 'MMM yyyy')}</span>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                    <button onClick={() => setEditTarget(u)} className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded transition-all">
-                      <Edit2 size={14} />
-                    </button>
-                  </div>
+                  <ChevronRight size={18} className="text-gray-300 group-hover:text-gray-400 transition-colors" strokeWidth={2.5} />
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       )}
 

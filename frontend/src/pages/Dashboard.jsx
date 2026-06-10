@@ -21,18 +21,21 @@ const PRIORITY_COLORS = {
 };
 
 function StatCard({ icon: Icon, label, value, color, sublabel }) {
+  const colorStr = typeof color === 'string' ? color : color.bg;
+  const colorText = typeof color === 'string' ? color.replace('bg-', 'text-') : color.text;
+  
   return (
-    <div className="card p-5">
+    <div className="card card-hover p-6 flex flex-col justify-between h-full cursor-pointer">
       <div className="flex items-start justify-between">
-        <div className={`w-10 h-10 rounded-ios flex items-center justify-center ${color}`}>
-          <Icon size={18} className="text-white" strokeWidth={2.2} />
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${colorStr.replace('bg-', 'bg-').replace('-500', '-50')} border border-white`}>
+          <Icon className={colorText} size={24} strokeWidth={2.5} />
         </div>
       </div>
-      <div className="mt-4">
-        <p className="text-3xl font-bold text-gray-900 tracking-tight">{value}</p>
-        <p className="text-sm font-medium text-gray-500 mt-0.5">{label}</p>
-        {sublabel && <p className="text-xs text-gray-400 mt-0.5">{sublabel}</p>}
+      <div className="mt-5">
+        <p className="text-[13px] font-bold text-gray-500 uppercase tracking-widest mb-1">{label}</p>
+        <h3 className="text-4xl font-black text-gray-900 tracking-tight">{value}</h3>
       </div>
+      {sublabel && <p className="text-[13px] font-medium text-gray-400 mt-2">{sublabel}</p>}
     </div>
   );
 }
@@ -149,16 +152,16 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-7xl mx-auto">
+    <div className="space-y-8 animate-slide-up max-w-7xl mx-auto">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 tracking-tight">
+        <h2 className="text-3xl font-bold text-gray-900 tracking-tight">
           Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'},{' '}
-          <span className="text-blue-500">{user?.name?.split(' ')[0]}</span>
+          <span className="text-blue-500">{user?.name ? user.name.split(' ')[0] : 'there'}</span>
         </h2>
-        <p className="text-sm text-gray-400 mt-1">Here's what's happening with your projects today.</p>
+        <p className="text-base text-gray-500 mt-1.5 font-medium">Here's what's happening with your projects today.</p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard icon={FolderKanban} label="Active Projects" value={stats?.active_projects ?? 0} color="bg-blue-500" />
         <StatCard icon={CheckSquare} label="My Tasks" value={stats?.my_tasks ?? 0} color="bg-orange-500" sublabel="Pending" />
         <StatCard icon={TrendingUp} label="Completed" value={stats?.completed_tasks ?? 0} color="bg-green-500" sublabel="Tasks done" />
@@ -170,15 +173,15 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2 space-y-6">
           <div className="card">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <h3 className="text-sm font-semibold text-gray-900">My Active Tasks</h3>
-              <Link to="/tasks" className="flex items-center gap-1 text-xs font-medium text-blue-500 hover:text-blue-600 transition-colors">
-                View all <ArrowRight size={13} />
+            <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100/60">
+              <h3 className="text-base font-bold text-gray-900">My Active Tasks</h3>
+              <Link to="/tasks" className="flex items-center gap-1 text-xs font-bold text-blue-500 hover:text-blue-600 transition-colors uppercase tracking-wider">
+                View all <ArrowRight size={13} strokeWidth={2.5} />
               </Link>
             </div>
-            <div className="p-2">
+            <div className="p-3">
               {myTasks.length === 0 ? (
                 <div className="flex flex-col items-center py-8 text-center">
                   <CheckSquare size={32} className="text-gray-200 mb-2" strokeWidth={1.5} />
@@ -211,9 +214,9 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="card">
-          <div className="px-5 py-4 border-b border-gray-100">
-            <h3 className="text-sm font-semibold text-gray-900">Recent Activity</h3>
+        <div className="card h-full">
+          <div className="px-6 py-5 border-b border-gray-100/60">
+            <h3 className="text-base font-bold text-gray-900">Recent Activity</h3>
           </div>
           <div className="p-2 overflow-y-auto max-h-[460px]" data-lenis-prevent>
             {activity.length === 0 ? (

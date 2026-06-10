@@ -6,6 +6,7 @@ import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { getCached, setCached } from '../api/cache';
 import Modal from '../components/Modal';
+import AppleSelect from '../components/AppleSelect';
 
 const STATUS_STYLE = { todo:'bg-gray-100 text-gray-600', in_progress:'bg-blue-100 text-blue-600', review:'bg-orange-100 text-orange-600', done:'bg-green-100 text-green-600' };
 const PRIORITY_STYLE = { low:'priority-low', medium:'priority-medium', high:'priority-high', urgent:'priority-urgent' };
@@ -31,14 +32,12 @@ function TaskRow({ task, onStatusChange }) {
         </div>
       </div>
       <div className="flex items-center gap-3 flex-shrink-0">
-        <select
+        <AppleSelect
           value={task.status}
           onChange={(e) => onStatusChange(task.id, e.target.value)}
-          className="text-xs border border-gray-200 rounded-ios px-2 py-1 bg-white text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-        </select>
+          className="w-[120px]"
+          options={Object.entries(STATUS_LABELS).map(([k, v]) => ({ value: k, label: v }))}
+        />
         <span className={`badge capitalize ${PRIORITY_STYLE[task.priority]}`}>{task.priority}</span>
         {task.due_date && (
           <span className={`text-xs flex items-center gap-1 ${overdue ? 'text-red-500 font-semibold' : 'text-gray-400'}`}>
@@ -107,22 +106,28 @@ export default function Tasks() {
       </div>
 
       <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
+        <div className="relative flex-1 min-w-[200px] max-w-sm flex-wrap">
           <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
           <input className="input-field pl-10" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search tasks..." />
         </div>
-        <select className="input-field w-auto" value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })}>
-          <option value="all">All Status</option>
-          {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-        </select>
-        <select className="input-field w-auto" value={filters.priority} onChange={(e) => setFilters({ ...filters, priority: e.target.value })}>
-          <option value="all">All Priority</option>
-          {['low','medium','high','urgent'].map((p) => <option key={p} value={p}>{p}</option>)}
-        </select>
-        <select className="input-field w-auto max-w-[160px]" value={filters.project} onChange={(e) => setFilters({ ...filters, project: e.target.value })}>
-          <option value="all">All Projects</option>
-          {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-        </select>
+        <AppleSelect
+          className="w-[140px]"
+          value={filters.status}
+          onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+          options={[{ value: 'all', label: 'All Status' }, ...Object.entries(STATUS_LABELS).map(([k, v]) => ({ value: k, label: v }))]}
+        />
+        <AppleSelect
+          className="w-[140px]"
+          value={filters.priority}
+          onChange={(e) => setFilters({ ...filters, priority: e.target.value })}
+          options={[{ value: 'all', label: 'All Priority' }, ...['low','medium','high','urgent'].map(p => ({ value: p, label: p.charAt(0).toUpperCase() + p.slice(1) }))]}
+        />
+        <AppleSelect
+          className="w-[160px]"
+          value={filters.project}
+          onChange={(e) => setFilters({ ...filters, project: e.target.value })}
+          options={[{ value: 'all', label: 'All Projects' }, ...projects.map((p) => ({ value: p.id, label: p.name }))]}
+        />
         <button
           onClick={() => setFilters({ ...filters, myTasks: !filters.myTasks })}
           className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-ios transition-all ${filters.myTasks ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-150'}`}

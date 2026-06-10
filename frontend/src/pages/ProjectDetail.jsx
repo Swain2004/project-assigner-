@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2, Upload, Users, CheckSquare, FileText, Layout, Calendar, MoreVertical, Search, Paperclip, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import Modal from '../components/Modal';
+import AppleSelect from '../components/AppleSelect';
 import MentionTextarea, { renderMentions } from '../components/MentionTextarea';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
@@ -82,12 +83,21 @@ function CreateTaskModal({ open, onClose, onCreated, projectId, members, default
             users={members}
           />
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div><label className="label">Status</label><select className="input-field" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>{STATUSES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}</select></div>
-          <div><label className="label">Priority</label><select className="input-field" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}>{['low','medium','high','urgent'].map((p) => <option key={p} value={p}>{p}</option>)}</select></div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="label">Status</label>
+            <AppleSelect value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} options={STATUSES.map((s) => ({ value: s.key, label: s.label }))} />
+          </div>
+          <div>
+            <label className="label">Priority</label>
+            <AppleSelect value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })} options={['low','medium','high','urgent'].map((p) => ({ value: p, label: p.charAt(0).toUpperCase() + p.slice(1) }))} />
+          </div>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div><label className="label">Assign To</label><select className="input-field" value={form.assigned_to} onChange={(e) => setForm({ ...form, assigned_to: e.target.value })}><option value="">Unassigned</option>{members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select></div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="label">Assign To</label>
+            <AppleSelect value={form.assigned_to} onChange={(e) => setForm({ ...form, assigned_to: e.target.value })} options={[{ value: '', label: 'Unassigned' }, ...members.map((m) => ({ value: m.id, label: m.name }))]} />
+          </div>
           <div><label className="label">Due Date</label><input type="date" className="input-field" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} /></div>
         </div>
         {error && <p className="text-sm text-red-500">{error}</p>}
@@ -128,11 +138,12 @@ function UploadModal({ open, onClose, onUploaded, projectId }) {
           {file ? <p className="text-sm font-semibold text-gray-700">{file.name} <span className="text-gray-400 font-normal">({(file.size/1024/1024).toFixed(1)} MB)</span></p>
             : <><p className="text-sm font-medium text-gray-500">Drop file or click to browse</p><p className="text-xs text-gray-400 mt-1">PDF, Word, Excel, CSV, Images — max 50MB</p></>}
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div><label className="label">Name</label><input className="input-field" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Document name" /></div>
-          <div><label className="label">Category</label><select className="input-field" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
-            {['technical_note','report','specification','proposal','other'].map((c) => <option key={c} value={c}>{c.replace('_',' ')}</option>)}
-          </select></div>
+          <div>
+            <label className="label">Category</label>
+            <AppleSelect value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} options={['technical_note','report','specification','proposal','other'].map((c) => ({ value: c, label: c.replace('_',' ').replace(/\b\w/g, l => l.toUpperCase()) }))} />
+          </div>
         </div>
         {error && <p className="text-sm text-red-500">{error}</p>}
         <div className="flex gap-3"><button type="button" onClick={onClose} className="btn-secondary flex-1">Cancel</button><button type="submit" disabled={loading||!file} className="btn-primary flex-1">{loading?'Uploading...':'Upload'}</button></div>

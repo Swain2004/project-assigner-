@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Layout, Plus, Trash2, Edit2, Send, X, GripVertical, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import Modal from '../components/Modal';
+import AppleSelect from '../components/AppleSelect';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { getCached, setCached } from '../api/cache';
@@ -23,7 +24,7 @@ function FieldEditor({ field, index, onChange, onRemove }) {
   return (
     <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-ios border border-gray-150 group">
       <div className="flex-1 space-y-2">
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <div className="col-span-2">
             <input
               className="input-field text-sm py-2"
@@ -32,13 +33,13 @@ function FieldEditor({ field, index, onChange, onRemove }) {
               placeholder="Field label *"
             />
           </div>
-          <select
-            className="input-field text-sm py-2"
-            value={field.type}
-            onChange={(e) => onChange(index, { ...field, type: e.target.value, options: e.target.value === 'select' ? ['Option 1'] : undefined })}
-          >
-            {FIELD_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-          </select>
+          <div className="w-[140px]">
+            <AppleSelect
+              value={field.type}
+              onChange={(e) => onChange(index, { ...field, type: e.target.value, options: e.target.value === 'select' ? ['Option 1'] : undefined })}
+              options={FIELD_TYPES.map((t) => ({value: t.value, label: t.label}))}
+            />
+          </div>
         </div>
         {field.type === 'select' && (
           <div>
@@ -118,10 +119,11 @@ function SubmitModal({ open, onClose, template, projects }) {
         </div>
         <div>
           <label className="label">Project *</label>
-          <select className="input-field" value={projectId} onChange={(e) => setProjectId(e.target.value)} required>
-            <option value="">Select project...</option>
-            {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
+          <AppleSelect
+            value={projectId}
+            onChange={(e) => setProjectId(e.target.value)}
+            options={[{value: '', label: 'Select project...'}, ...projects.map((p) => ({value: p.id, label: p.name}))]}
+          />
         </div>
         <div className="border-t border-gray-100 pt-4 space-y-4">
           {(template?.fields || []).map((field) => (
@@ -131,10 +133,11 @@ function SubmitModal({ open, onClose, template, projects }) {
                 <textarea className="input-field resize-none" rows={3} required={field.required} placeholder={field.placeholder}
                   value={form[field.label] || ''} onChange={(e) => setForm({ ...form, [field.label]: e.target.value })} />
               ) : field.type === 'select' ? (
-                <select className="input-field" required={field.required} value={form[field.label] || ''} onChange={(e) => setForm({ ...form, [field.label]: e.target.value })}>
-                  <option value="">Select...</option>
-                  {(field.options || []).map((o) => <option key={o} value={o}>{o}</option>)}
-                </select>
+                <AppleSelect
+                  value={form[field.label] || ''}
+                  onChange={(e) => setForm({ ...form, [field.label]: e.target.value })}
+                  options={[{value: '', label: 'Select...'}, ...(field.options || []).map((o) => ({value: o, label: o}))]}
+                />
               ) : field.type === 'checkbox' ? (
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={!!form[field.label]} onChange={(e) => setForm({ ...form, [field.label]: e.target.checked })} className="rounded w-4 h-4" />
@@ -186,29 +189,32 @@ function CreateTemplateModal({ open, onClose, onCreated, projects }) {
   return (
     <Modal isOpen={open} onClose={onClose} title="Create Template" size="xl">
       <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="label">Template Name *</label>
             <input className="input-field" value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} placeholder="e.g. Project Report" required />
           </div>
           <div>
             <label className="label">Type</label>
-            <select className="input-field" value={form.template_type} onChange={(e) => setForm({...form, template_type: e.target.value})}>
-              {TEMPLATE_TYPES.map((t) => <option key={t} value={t}>{t.replace('_',' ')}</option>)}
-            </select>
+            <AppleSelect
+              value={form.template_type}
+              onChange={(e) => setForm({...form, template_type: e.target.value})}
+              options={TEMPLATE_TYPES.map((t) => ({value: t, label: t.replace('_',' ')}))}
+            />
           </div>
         </div>
         <div>
           <label className="label">Description</label>
           <textarea className="input-field resize-none" rows={2} value={form.description} onChange={(e) => setForm({...form, description: e.target.value})} placeholder="What is this template for?" />
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="label">Associate with Project <span className="text-gray-400">(optional)</span></label>
-            <select className="input-field" value={form.project_id} onChange={(e) => setForm({...form, project_id: e.target.value})}>
-              <option value="">All Projects (Global)</option>
-              {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
+            <AppleSelect
+              value={form.project_id}
+              onChange={(e) => setForm({...form, project_id: e.target.value})}
+              options={[{value: '', label: 'All Projects (Global)'}, ...projects.map((p) => ({value: p.id, label: p.name}))]}
+            />
           </div>
           <div className="flex items-end pb-1">
             <label className="flex items-center gap-2 cursor-pointer">
@@ -271,7 +277,7 @@ export default function Templates() {
 
   return (
     <div className="space-y-5 max-w-6xl mx-auto animate-fade-in">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 items-start">
         <div>
           <h2 className="page-title">Templates</h2>
           <p className="text-sm text-gray-400 mt-0.5">Create reusable form templates for structured data collection</p>

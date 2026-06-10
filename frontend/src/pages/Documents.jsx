@@ -5,6 +5,7 @@ import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { getCached, setCached, invalidate } from '../api/cache';
 import Modal from '../components/Modal';
+import AppleSelect from '../components/AppleSelect';
 
 const CATEGORY_STYLE = {
   technical_note: 'bg-blue-50 text-blue-600 border-blue-100',
@@ -82,19 +83,14 @@ function UploadModal({ open, onClose, onUploaded, projects }) {
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="label">Project *</label>
-            <select className="input-field" value={form.project_id} onChange={(e) => setForm({...form, project_id: e.target.value})} required>
-              <option value="">Select project...</option>
-              {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
+            <AppleSelect value={form.project_id} onChange={(e) => setForm({...form, project_id: e.target.value})} options={[{value: '', label: 'Select project...'}, ...projects.map((p) => ({value: p.id, label: p.name}))]} />
           </div>
           <div>
             <label className="label">Category</label>
-            <select className="input-field" value={form.category} onChange={(e) => setForm({...form, category: e.target.value})}>
-              {['technical_note','report','specification','proposal','other'].map((c) => <option key={c} value={c}>{c.replace('_',' ')}</option>)}
-            </select>
+            <AppleSelect value={form.category} onChange={(e) => setForm({...form, category: e.target.value})} options={['technical_note','report','specification','proposal','other'].map((c) => ({value: c, label: c.replace('_',' ')}))} />
           </div>
         </div>
 
@@ -153,7 +149,7 @@ export default function Documents() {
 
   return (
     <div className="space-y-5 max-w-6xl mx-auto animate-fade-in">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 items-start">
         <div>
           <h2 className="page-title">Documents</h2>
           <p className="text-sm text-gray-400 mt-0.5">{documents.length} total files</p>
@@ -168,14 +164,18 @@ export default function Documents() {
           <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
           <input className="input-field pl-10" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search documents..." />
         </div>
-        <select className="input-field w-auto max-w-[180px]" value={filter.project} onChange={(e) => setFilter({...filter, project: e.target.value})}>
-          <option value="all">All Projects</option>
-          {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-        </select>
-        <select className="input-field w-auto" value={filter.category} onChange={(e) => setFilter({...filter, category: e.target.value})}>
-          <option value="all">All Categories</option>
-          {['technical_note','report','specification','proposal','other'].map((c) => <option key={c} value={c}>{c.replace('_',' ')}</option>)}
-        </select>
+        <AppleSelect
+          className="w-[180px]"
+          value={filter.project}
+          onChange={(e) => setFilter({...filter, project: e.target.value})}
+          options={[{value: 'all', label: 'All Projects'}, ...projects.map((p) => ({value: p.id, label: p.name}))]}
+        />
+        <AppleSelect
+          className="w-[160px]"
+          value={filter.category}
+          onChange={(e) => setFilter({...filter, category: e.target.value})}
+          options={[{value: 'all', label: 'All Categories'}, ...['technical_note','report','specification','proposal','other'].map((c) => ({value: c, label: c.replace('_',' ')}))]}
+        />
       </div>
 
       {loading ? (
@@ -190,45 +190,45 @@ export default function Documents() {
           {!search && <button onClick={() => setShowUpload(true)} className="btn-primary mt-4">Upload Document</button>}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filtered.map((doc) => (
-            <div key={doc.id} className="card p-4 hover:shadow-apple-md transition-shadow duration-200 group flex flex-col">
-              <div className="flex items-start justify-between gap-2 mb-3">
-                <div className={`w-11 h-11 rounded-ios flex items-center justify-center flex-shrink-0 border ${getMimeColor(doc.mime_type)}`}>
-                  <FileText size={20} strokeWidth={1.5} />
+            <div key={doc.id} className="bg-white p-5 rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/50 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:-translate-y-0.5 transition-all duration-300 group flex flex-col h-full">
+              <div className="flex items-start justify-between gap-2 mb-4">
+                <div className={`w-12 h-12 rounded-[14px] flex items-center justify-center flex-shrink-0 shadow-sm border ${getMimeColor(doc.mime_type)}`}>
+                  <FileText size={22} strokeWidth={1.5} />
                 </div>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                  <a href={doc.file_url} target="_blank" rel="noreferrer" className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded transition-all" title="View">
-                    <ExternalLink size={13} />
+                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all bg-gray-50 rounded-full p-1 border border-gray-100/80 shadow-sm">
+                  <a href={doc.file_url} target="_blank" rel="noreferrer" className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-white rounded-full transition-all hover:shadow-sm" title="View">
+                    <ExternalLink size={14} />
                   </a>
-                  <a href={doc.file_url} download={doc.original_name} className="p-1.5 text-gray-400 hover:text-green-500 hover:bg-green-50 rounded transition-all" title="Download">
-                    <Download size={13} />
+                  <a href={doc.file_url} download={doc.original_name} className="p-1.5 text-gray-400 hover:text-green-500 hover:bg-white rounded-full transition-all hover:shadow-sm" title="Download">
+                    <Download size={14} />
                   </a>
                   {(doc.uploaded_by === user?.id || isAdmin) && (
-                    <button onClick={() => deleteDoc(doc.id)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-all" title="Delete">
-                      <Trash2 size={13} />
+                    <button onClick={() => deleteDoc(doc.id)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-white rounded-full transition-all hover:shadow-sm" title="Delete">
+                      <Trash2 size={14} />
                     </button>
                   )}
                 </div>
               </div>
 
               <div className="flex-1">
-                <p className="text-sm font-bold text-gray-800 line-clamp-2 leading-snug">{doc.name}</p>
-                {doc.description && <p className="text-xs text-gray-400 mt-1 line-clamp-2">{doc.description}</p>}
+                <p className="text-[15px] font-bold text-gray-900 tracking-tight line-clamp-2 leading-snug">{doc.name}</p>
+                {doc.description && <p className="text-[13px] text-gray-500 mt-1.5 line-clamp-2 leading-relaxed">{doc.description}</p>}
               </div>
 
-              <div className="mt-3 pt-3 border-t border-gray-100 space-y-1.5">
+              <div className="mt-4 pt-4 border-t border-gray-100/80 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className={`badge capitalize text-[11px] border ${CATEGORY_STYLE[doc.category] || CATEGORY_STYLE.other}`}>
+                  <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-[6px] capitalize tracking-wide ${CATEGORY_STYLE[doc.category] || CATEGORY_STYLE.other}`}>
                     {doc.category?.replace('_',' ')}
                   </span>
-                  {doc.file_size && <span className="text-[11px] text-gray-400">{formatBytes(doc.file_size)}</span>}
+                  {doc.file_size && <span className="text-[12px] font-medium text-gray-400">{formatBytes(doc.file_size)}</span>}
                 </div>
                 <div className="flex items-center justify-between">
-                  {doc.project_name && <span className="text-[11px] text-blue-500 font-medium truncate max-w-[120px]">{doc.project_name}</span>}
-                  <span className="text-[11px] text-gray-400 flex-shrink-0">{format(new Date(doc.created_at), 'MMM d, yyyy')}</span>
+                  {doc.project_name && <span className="text-[12px] font-medium text-blue-500 truncate max-w-[130px] hover:underline cursor-pointer">{doc.project_name}</span>}
+                  <span className="text-[11px] font-medium text-gray-400 flex-shrink-0">{format(new Date(doc.created_at), 'MMM d, yyyy')}</span>
                 </div>
-                <p className="text-[11px] text-gray-400">by {doc.uploader_name}</p>
+                <p className="text-[11px] font-medium text-gray-400">by <span className="text-gray-600">{doc.uploader_name}</span></p>
               </div>
             </div>
           ))}

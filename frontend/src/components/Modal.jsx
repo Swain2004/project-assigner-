@@ -29,24 +29,24 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' })
   };
 
   return (
-    <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
       <div
-        className="absolute inset-0 bg-black/30 backdrop-blur-[3px]"
+        className="fixed inset-0 bg-black/20 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
       <div
-        className={`modal-content relative bg-white rounded-ios-xl shadow-apple-lg w-full ${sizeClasses[size]} max-h-[90vh] flex flex-col`}
+        className={`modal-content relative bg-white rounded-[24px] shadow-[0_20px_60px_rgba(0,0,0,0.12)] w-full ${sizeClasses[size]} max-h-[85vh] flex flex-col`}
       >
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
-          <h2 className="text-lg font-bold text-gray-900">{title}</h2>
+        <div className="flex items-center justify-between px-5 sm:px-6 py-4 sm:py-5 border-b border-gray-100 flex-shrink-0">
+          <h2 className="text-xl font-bold text-gray-900 tracking-tight">{title}</h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-ios text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+            className="p-2 -mr-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0"
           >
-            <X size={18} />
+            <X size={20} strokeWidth={2.5} />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto px-6 py-5" data-lenis-prevent>
+        <div className="p-5 sm:p-6 overflow-y-auto flex-1" data-lenis-prevent="true">
           {children}
         </div>
       </div>
