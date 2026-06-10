@@ -25,38 +25,38 @@ function StatCard({ icon: Icon, label, value, color, sublabel }) {
   const colorText = typeof color === 'string' ? color.replace('bg-', 'text-') : color.text;
   
   return (
-    <div className="card card-hover p-6 flex flex-col justify-between h-full cursor-pointer">
+    <div className="card p-6 flex flex-col justify-between h-full cursor-pointer group hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-300 border border-gray-150/60 bg-gradient-to-b from-white to-gray-50/30">
       <div className="flex items-start justify-between">
-        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${colorStr.replace('bg-', 'bg-').replace('-500', '-50')} border border-white`}>
-          <Icon className={colorText} size={24} strokeWidth={2.5} />
+        <div className={`w-12 h-12 rounded-[14px] flex items-center justify-center ${colorStr.replace('bg-', 'bg-').replace('-500', '-50')} shadow-sm group-hover:scale-105 transition-transform duration-300`}>
+          <Icon className={colorText} size={22} strokeWidth={2.5} />
         </div>
       </div>
-      <div className="mt-5">
-        <p className="text-[13px] font-bold text-gray-500 uppercase tracking-widest mb-1">{label}</p>
-        <h3 className="text-4xl font-black text-gray-900 tracking-tight">{value}</h3>
+      <div className="mt-6">
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">{label}</p>
+        <h3 className="text-[40px] leading-none font-black text-gray-900 tracking-tight">{value}</h3>
       </div>
-      {sublabel && <p className="text-[13px] font-medium text-gray-400 mt-2">{sublabel}</p>}
+      {sublabel && <p className="text-sm font-semibold text-gray-400 mt-3">{sublabel}</p>}
     </div>
   );
 }
 
 function TaskCard({ task }) {
   return (
-    <Link to={`/projects/${task.project_id}`} className="flex items-start gap-3 p-3 rounded-ios hover:bg-gray-50 transition-colors group">
-      <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${STATUS_COLORS[task.status] || 'bg-gray-300'}`} />
+    <Link to={`/projects/${task.project_id}`} className="flex items-start gap-3.5 p-3.5 rounded-2xl hover:bg-gray-50/80 transition-colors group">
+      <div className={`w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0 shadow-sm ${STATUS_COLORS[task.status] || 'bg-gray-300'}`} />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-800 truncate group-hover:text-blue-500 transition-colors">{task.title}</p>
-        <div className="flex items-center gap-2 mt-0.5">
-          <span className="text-xs text-gray-400 truncate">{task.project_name}</span>
+        <p className="text-[15px] font-semibold text-gray-900 tracking-tight truncate group-hover:text-blue-500 transition-colors">{task.title}</p>
+        <div className="flex items-center gap-2 mt-1">
+          <span className="text-[13px] font-medium text-gray-400 truncate">{task.project_name}</span>
           {task.due_date && (
-            <span className="text-xs text-gray-400 flex items-center gap-1">
-              <Clock size={10} />
+            <span className="text-[12px] font-medium text-gray-400 flex items-center gap-1.5">
+              <Clock size={12} />
               {formatDistanceToNow(new Date(task.due_date), { addSuffix: true })}
             </span>
           )}
         </div>
       </div>
-      <span className={`text-xs font-semibold capitalize ${PRIORITY_COLORS[task.priority]}`}>
+      <span className={`text-[11px] font-bold uppercase tracking-wider ${PRIORITY_COLORS[task.priority]}`}>
         {task.priority}
       </span>
     </Link>
@@ -71,21 +71,26 @@ function ProjectCard({ project }) {
   return (
     <Link
       to={`/projects/${project.id}`}
-      className="flex items-center gap-4 p-3 rounded-ios hover:bg-gray-50 transition-colors group"
+      className="flex items-center gap-4 p-3.5 rounded-2xl hover:bg-gray-50/80 transition-colors group"
     >
-      <div className="w-9 h-9 rounded-ios flex items-center justify-center flex-shrink-0" style={{ background: project.color || '#007AFF', opacity: 0.9 }}>
-        <FolderKanban size={16} className="text-white" strokeWidth={2} />
+      <div className="w-10 h-10 rounded-[12px] flex items-center justify-center flex-shrink-0 shadow-sm" style={{ background: project.color || '#007AFF' }}>
+        <FolderKanban size={18} className="text-white" strokeWidth={2.5} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-gray-800 truncate group-hover:text-blue-500 transition-colors">{project.name}</p>
-        <div className="flex items-center gap-2 mt-1.5">
-          <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all duration-500"
-              style={{ width: `${pct}%`, background: project.color || '#007AFF' }}
-            />
+        <p className="text-[15px] font-semibold text-gray-900 tracking-tight truncate group-hover:text-blue-500 transition-colors">{project.name}</p>
+        <div className="mt-2.5">
+          <div className="flex justify-between items-end mb-1.5">
+             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Progress</span>
+             <span className="text-[11px] font-bold text-gray-600">{pct}%</span>
           </div>
-          <span className="text-xs text-gray-400 flex-shrink-0">{pct}%</span>
+          <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-700 relative overflow-hidden"
+              style={{ width: `${pct}%`, background: project.color || '#007AFF' }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent" style={{ animation: 'shimmer 2s infinite linear' }} />
+            </div>
+          </div>
         </div>
       </div>
     </Link>
@@ -153,12 +158,12 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8 animate-slide-up max-w-7xl mx-auto">
-      <div>
-        <h2 className="text-3xl font-bold text-gray-900 tracking-tight">
+      <div className="px-1">
+        <h2 className="text-[34px] font-black text-gray-900 tracking-tight leading-tight">
           Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'},{' '}
-          <span className="text-blue-500">{user?.name ? user.name.split(' ')[0] : 'there'}</span>
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-500">{user?.name ? user.name.split(' ')[0] : 'there'}</span>
         </h2>
-        <p className="text-base text-gray-500 mt-1.5 font-medium">Here's what's happening with your projects today.</p>
+        <p className="text-[15px] text-gray-500 mt-2 font-medium">Here's what's happening with your projects today.</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -174,11 +179,11 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <div className="card">
-            <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100/60">
-              <h3 className="text-base font-bold text-gray-900">My Active Tasks</h3>
-              <Link to="/tasks" className="flex items-center gap-1 text-xs font-bold text-blue-500 hover:text-blue-600 transition-colors uppercase tracking-wider">
-                View all <ArrowRight size={13} strokeWidth={2.5} />
+          <div className="card shadow-apple-sm border-0 ring-1 ring-gray-100 overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100/80 bg-gray-50/50">
+              <h3 className="text-[17px] font-bold text-gray-900 tracking-tight">My Active Tasks</h3>
+              <Link to="/tasks" className="flex items-center gap-1 text-[11px] font-bold text-blue-500 hover:text-blue-600 transition-colors uppercase tracking-wider bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-full">
+                View all <ArrowRight size={12} strokeWidth={2.5} />
               </Link>
             </div>
             <div className="p-3">
@@ -194,11 +199,11 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="card">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <h3 className="text-sm font-semibold text-gray-900">My Projects</h3>
-              <Link to="/projects" className="flex items-center gap-1 text-xs font-medium text-blue-500 hover:text-blue-600 transition-colors">
-                View all <ArrowRight size={13} />
+          <div className="card shadow-apple-sm border-0 ring-1 ring-gray-100 overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100/80 bg-gray-50/50">
+              <h3 className="text-[17px] font-bold text-gray-900 tracking-tight">My Projects</h3>
+              <Link to="/projects" className="flex items-center gap-1 text-[11px] font-bold text-blue-500 hover:text-blue-600 transition-colors uppercase tracking-wider bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-full">
+                View all <ArrowRight size={12} strokeWidth={2.5} />
               </Link>
             </div>
             <div className="p-2">
@@ -214,9 +219,9 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="card h-full">
-          <div className="px-6 py-5 border-b border-gray-100/60">
-            <h3 className="text-base font-bold text-gray-900">Recent Activity</h3>
+        <div className="card shadow-apple-sm border-0 ring-1 ring-gray-100 overflow-hidden h-full">
+          <div className="px-6 py-5 border-b border-gray-100/80 bg-gray-50/50">
+            <h3 className="text-[17px] font-bold text-gray-900 tracking-tight">Recent Activity</h3>
           </div>
           <div className="p-2 overflow-y-auto max-h-[460px]" data-lenis-prevent>
             {activity.length === 0 ? (
@@ -225,21 +230,21 @@ export default function Dashboard() {
                 <p className="text-sm text-gray-400">No activity yet</p>
               </div>
             ) : (
-              <div className="space-y-0">
+              <div className="space-y-0.5 p-2">
                 {activity.map((a) => (
-                  <div key={a.id} className="flex items-start gap-3 p-3 hover:bg-gray-50 rounded-ios transition-colors">
-                    <div className="w-7 h-7 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <div key={a.id} className="flex items-start gap-3.5 p-3 hover:bg-gray-50/80 rounded-2xl transition-colors">
+                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm border border-white">
                       {a.avatar_url ? (
-                        <img src={a.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover" />
+                        <img src={a.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
                       ) : (
-                        <span className="text-[10px] font-bold text-gray-500">
+                        <span className="text-[11px] font-bold text-gray-500">
                           {a.user_name?.charAt(0)?.toUpperCase() || '?'}
                         </span>
                       )}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-gray-700 leading-snug">
-                        <span className="font-semibold">{a.user_name || 'Someone'}</span>{' '}
+                    <div className="flex-1 min-w-0 pt-0.5">
+                      <p className="text-[13px] text-gray-700 leading-snug">
+                        <span className="font-bold text-gray-900">{a.user_name || 'Someone'}</span>{' '}
                         {ACTION_LABELS[a.action] || a.action}
                         {a.metadata?.name && (
                           <span className="font-medium text-gray-800"> "{a.metadata.name}"</span>

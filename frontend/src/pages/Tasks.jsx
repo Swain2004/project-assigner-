@@ -15,7 +15,7 @@ const STATUS_LABELS = { todo:'To Do', in_progress:'In Progress', review:'In Revi
 function TaskRow({ task, onStatusChange }) {
   const overdue = task.due_date && !['done'].includes(task.status) && isPast(new Date(task.due_date));
   return (
-    <div className="flex items-center gap-4 px-4 py-3.5 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0 group">
+    <div className="flex items-center gap-4 px-4 py-3.5 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0 last:rounded-b-[24px] group">
       <button
         onClick={() => onStatusChange(task.id, task.status === 'done' ? 'todo' : 'done')}
         className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${task.status === 'done' ? 'bg-green-500 border-green-500' : 'border-gray-300 hover:border-blue-500'}`}
@@ -99,7 +99,7 @@ export default function Tasks() {
   );
 
   return (
-    <div className="space-y-5 max-w-5xl mx-auto animate-fade-in">
+    <div className="space-y-5 max-w-5xl mx-auto animate-fade-in pb-32">
       <div>
         <h2 className="page-title">Tasks</h2>
         <p className="text-sm text-gray-400 mt-0.5">{tasks.length} total tasks</p>
@@ -148,13 +148,15 @@ export default function Tasks() {
             const statusTasks = grouped[status] || [];
             if (statusTasks.length === 0) return null;
             return (
-              <div key={status} className="card overflow-hidden">
-                <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 bg-gray-50/50">
+              <div key={status} className="card overflow-visible">
+                <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 bg-gray-50/50 rounded-t-[24px]">
                   <span className={`badge ${STATUS_STYLE[status]} capitalize`}>{STATUS_LABELS[status]}</span>
                   <span className="text-xs text-gray-400 font-medium">{statusTasks.length}</span>
                 </div>
-                <div>
-                  {statusTasks.map((t) => <TaskRow key={t.id} task={t} onStatusChange={handleStatusChange} />)}
+                <div className="flex flex-col">
+                  {statusTasks.map((t) => (
+                    <TaskRow key={t.id} task={t} onStatusChange={handleStatusChange} />
+                  ))}
                 </div>
               </div>
             );
