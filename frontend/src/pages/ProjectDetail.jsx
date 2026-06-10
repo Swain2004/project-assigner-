@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { ArrowLeft, Plus, Trash2, Upload, Users, CheckSquare, FileText, Layout, Calendar, MoreVertical, Search, Paperclip, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import Modal from '../components/Modal';
@@ -16,10 +17,15 @@ const STATUSES = [
 ];
 const PRIORITY_STYLE = { low: 'priority-low', medium: 'priority-medium', high: 'priority-high', urgent: 'priority-urgent' };
 
-function TaskCard({ task, onUpdate, onDelete }) {
+function TaskCard({ task, onUpdate, onDelete, innerRef, draggableProps, dragHandleProps, isDragging }) {
   const [menu, setMenu] = useState(false);
   return (
-    <div className="bg-white border border-gray-150 rounded-ios p-3.5 shadow-apple-sm group hover:shadow-apple transition-shadow">
+    <div 
+      ref={innerRef} 
+      {...draggableProps} 
+      {...dragHandleProps} 
+      className={`bg-white border border-gray-150 rounded-ios p-3.5 shadow-apple-sm group transition-all ${isDragging ? 'shadow-apple-md ring-2 ring-blue-500 scale-[1.02] z-50 rotate-1' : 'hover:shadow-apple'}`}
+    >
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm font-semibold text-gray-800 leading-snug flex-1">{task.title}</p>
         <div className="relative flex-shrink-0">
@@ -27,15 +33,15 @@ function TaskCard({ task, onUpdate, onDelete }) {
             <MoreVertical size={14} />
           </button>
           {menu && (
-            <div className="absolute right-0 top-6 w-36 bg-white border border-gray-200 rounded-ios shadow-apple-md z-10">
+            <div className="absolute right-0 top-7 w-40 bg-white/90 backdrop-blur-xl border border-gray-100 rounded-[14px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] z-50 overflow-hidden py-1">
               {STATUSES.map((s) => (
                 <button key={s.key} onClick={() => { onUpdate(task.id, { status: s.key }); setMenu(false); }}
-                  className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 ${task.status === s.key ? 'font-semibold text-blue-500' : 'text-gray-600'}`}>
+                  className={`w-full text-left px-3.5 py-2 text-xs font-medium hover:bg-gray-100/50 transition-colors ${task.status === s.key ? 'text-blue-500' : 'text-gray-700'}`}>
                   {s.label}
                 </button>
               ))}
-              <div className="border-t border-gray-100" />
-              <button onClick={() => { onDelete(task.id); setMenu(false); }} className="w-full text-left px-3 py-2 text-xs text-red-500 hover:bg-red-50">Delete</button>
+              <div className="border-t border-gray-100/60 my-1" />
+              <button onClick={() => { onDelete(task.id); setMenu(false); }} className="w-full text-left px-3.5 py-2 text-xs font-medium text-red-500 hover:bg-red-50 transition-colors">Delete</button>
             </div>
           )}
         </div>
@@ -324,8 +330,50 @@ export default function ProjectDetail() {
   if (loading) return <div className="max-w-7xl mx-auto"><div className="skeleton h-40 rounded-ios-lg" /></div>;
   if (!project) return <div className="text-center py-20"><p className="text-gray-400">Project not found</p><Link to="/projects" className="btn-primary mt-4 inline-flex">Back</Link></div>;
 
-  const pct = project.stats ? Math.round((parseInt(project.stats.completed_tasks) / Math.max(parseInt(project.stats.total_tasks), 1)) * 100) : 0;
+  const totalTasks = tasks.length;
+  const completedTasks = tasks.filter((t) => t.status === 'done').length;
+  const inProgressTasks = tasks.filter((t) => t.status === 'in_progress').length;
+  const pct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
   const tasksByStatus = STATUSES.reduce((acc, s) => { acc[s.key] = tasks.filter((t) => t.status === s.key); return acc; }, {});
+
+  const handleDragEnd = async (result) => {
+    const { destination, source, draggableId } = result;
+
+    if (!destination) return;
+    if (destination.droppableId === source.droppableId && destination.index === source.index) return;
+
+    const newStatus = destination.droppableId;
+    const taskId = draggableId; // This is a UUID, don't parse to Int!
+    
+    // Backup tasks for revert
+    const oldTasks = [...tasks];
+
+    // Optimistic update with correct reordering
+    setTasks((prevTasks) => {
+      const grouped = STATUSES.reduce((acc, s) => { acc[s.key] = prevTasks.filter((t) => t.status === s.key); return acc; }, {});
+      
+      const sourceList = Array.from(grouped[source.droppableId] || []);
+      const [movedTask] = sourceList.splice(source.index, 1);
+      if (!movedTask) return prevTasks;
+
+      movedTask.status = newStatus;
+      
+      const destList = source.droppableId === destination.droppableId ? sourceList : Array.from(grouped[destination.droppableId] || []);
+      destList.splice(destination.index, 0, movedTask);
+      
+      grouped[source.droppableId] = sourceList;
+      grouped[destination.droppableId] = destList;
+      
+      return Object.values(grouped).flat();
+    });
+
+    try {
+      await api.put(`/tasks/${taskId}`, { status: newStatus });
+    } catch (err) {
+      setTasks(oldTasks);
+      console.error('Failed to move task:', err);
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto space-y-5 animate-fade-in">
@@ -358,9 +406,9 @@ export default function ProjectDetail() {
           <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: project.color || '#007AFF' }} />
         </div>
         <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
-          <span>{project.stats?.total_tasks || 0} tasks</span>
-          <span>{project.stats?.completed_tasks || 0} done</span>
-          <span>{project.stats?.in_progress_tasks || 0} in progress</span>
+          <span>{totalTasks} tasks</span>
+          <span>{completedTasks} done</span>
+          <span>{inProgressTasks} in progress</span>
         </div>
       </div>
 
@@ -384,30 +432,55 @@ export default function ProjectDetail() {
               </button>
             )}
           </div>
-          <div className="flex gap-4 overflow-x-auto pb-4" data-lenis-prevent>
-            {STATUSES.map((s) => (
-              <div key={s.key} className="flex-1 min-w-[240px] max-w-[300px]">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full" style={{ background: s.color }} />
-                    <span className="text-sm font-semibold text-gray-700">{s.label}</span>
-                    <span className="w-5 h-5 bg-gray-100 text-gray-500 text-[11px] font-bold rounded-full flex items-center justify-center">{tasksByStatus[s.key]?.length}</span>
-                  </div>
-                  <button onClick={() => { setDefaultStatus(s.key); setShowTask(true); }} className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-blue-500 hover:bg-blue-50 rounded-md transition-all">
-                    <Plus size={14} strokeWidth={2.5} />
-                  </button>
-                </div>
-                <div className="space-y-2.5 min-h-[80px]">
-                  {tasksByStatus[s.key]?.map((t) => <TaskCard key={t.id} task={t} onUpdate={handleTaskUpdate} onDelete={handleTaskDelete} />)}
-                  {tasksByStatus[s.key]?.length === 0 && (
-                    <div className="border-2 border-dashed border-gray-150 rounded-ios p-4 text-center">
-                      <p className="text-xs text-gray-300">No tasks</p>
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <div className="flex gap-4 overflow-x-auto pb-32" data-lenis-prevent>
+              {STATUSES.map((s) => (
+                <div key={s.key} className="flex-1 min-w-[240px] max-w-[300px]">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full" style={{ background: s.color }} />
+                      <span className="text-sm font-semibold text-gray-700">{s.label}</span>
+                      <span className="w-5 h-5 bg-gray-100 text-gray-500 text-[11px] font-bold rounded-full flex items-center justify-center">{tasksByStatus[s.key]?.length}</span>
                     </div>
-                  )}
+                    <button onClick={() => { setDefaultStatus(s.key); setShowTask(true); }} className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-blue-500 hover:bg-blue-50 rounded-md transition-all">
+                      <Plus size={14} strokeWidth={2.5} />
+                    </button>
+                  </div>
+                  <Droppable droppableId={s.key}>
+                    {(provided, snapshot) => (
+                      <div 
+                        ref={provided.innerRef} 
+                        {...provided.droppableProps}
+                        className={`space-y-2.5 min-h-[80px] rounded-ios p-1 transition-colors ${snapshot.isDraggingOver ? 'bg-gray-50' : ''}`}
+                      >
+                        {tasksByStatus[s.key]?.map((t, index) => (
+                          <Draggable key={t.id.toString()} draggableId={t.id.toString()} index={index}>
+                            {(provided, snapshot) => (
+                              <TaskCard 
+                                task={t} 
+                                onUpdate={handleTaskUpdate} 
+                                onDelete={handleTaskDelete}
+                                innerRef={provided.innerRef}
+                                draggableProps={provided.draggableProps}
+                                dragHandleProps={provided.dragHandleProps}
+                                isDragging={snapshot.isDragging}
+                              />
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                        {tasksByStatus[s.key]?.length === 0 && !snapshot.isDraggingOver && (
+                          <div className="border-2 border-dashed border-gray-150 rounded-ios p-4 text-center">
+                            <p className="text-xs text-gray-300">No tasks</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </Droppable>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </DragDropContext>
         </div>
       )}
 
