@@ -421,45 +421,6 @@ export default function ProjectDetail() {
   const pct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
   const tasksByStatus = STATUSES.reduce((acc, s) => { acc[s.key] = tasks.filter((t) => t.status === s.key); return acc; }, {});
 
-  const handleDragEnd = async (result) => {
-    const { destination, source, draggableId } = result;
-
-    if (!destination) return;
-    if (destination.droppableId === source.droppableId && destination.index === source.index) return;
-
-    const newStatus = destination.droppableId;
-    const taskId = draggableId; // This is a UUID, don't parse to Int!
-    
-    // Backup tasks for revert
-    const oldTasks = [...tasks];
-
-    // Optimistic update with correct reordering
-    setTasks((prevTasks) => {
-      const grouped = STATUSES.reduce((acc, s) => { acc[s.key] = prevTasks.filter((t) => t.status === s.key); return acc; }, {});
-      
-      const sourceList = Array.from(grouped[source.droppableId] || []);
-      const [movedTask] = sourceList.splice(source.index, 1);
-      if (!movedTask) return prevTasks;
-
-      movedTask.status = newStatus;
-      
-      const destList = source.droppableId === destination.droppableId ? sourceList : Array.from(grouped[destination.droppableId] || []);
-      destList.splice(destination.index, 0, movedTask);
-      
-      grouped[source.droppableId] = sourceList;
-      grouped[destination.droppableId] = destList;
-      
-      return Object.values(grouped).flat();
-    });
-
-    try {
-      await api.put(`/tasks/${taskId}`, { status: newStatus });
-    } catch (err) {
-      setTasks(oldTasks);
-      console.error('Failed to move task:', err);
-    }
-  };
-
   return (
     <div className="max-w-7xl mx-auto space-y-5 animate-fade-in">
       <Link to="/projects" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors font-medium">
