@@ -143,43 +143,46 @@ function UploadModal({ open, onClose, onUploaded, projectId }) {
 
 function AddMemberModal({ open, onClose, onAdded, projectId, existingMemberIds = [] }) {
   const [search, setSearch] = useState('');
-  const [results, setResults] = useState([]);
+  const [rawResults, setRawResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [adding, setAdding] = useState(null);
 
+  const results = rawResults.filter((u) => !existingMemberIds.includes(u.id));
+
   useEffect(() => {
-    if (!open) { setSearch(''); setResults([]); setError(''); setAdding(null); }
+    if (!open) { setSearch(''); setRawResults([]); setError(''); setAdding(null); }
   }, [open]);
 
   useEffect(() => {
-    if (search.trim().length < 1) { setResults([]); setError(''); return; }
-    setLoading(true);
+    if (search.trim().length < 1) { setRawResults([]); setError(''); setLoading(false); return; }
     setError('');
     const t = setTimeout(async () => {
+      setLoading(true);
       try {
         const res = await api.get(`/users/search?q=${encodeURIComponent(search.trim())}`);
-        const filtered = (res.data.users || []).filter((u) => !existingMemberIds.includes(u.id));
-        setResults(filtered);
+        setRawResults(res.data.users || []);
       } catch (err) {
         setError('Could not load users. Please try again.');
-        setResults([]);
+        setRawResults([]);
       } finally {
         setLoading(false);
       }
-    }, 300);
+    }, 150);
     return () => clearTimeout(t);
-  }, [search, existingMemberIds]);
+  }, [search]);
 
   async function add(user) {
     setAdding(user.id);
+    setRawResults((prev) => prev.filter((u) => u.id !== user.id));
     try {
       const res = await api.post(`/projects/${projectId}/members`, { user_id: user.id });
       onAdded(res.data.member);
       setSearch('');
-      setResults([]);
+      setRawResults([]);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to add member');
+      setRawResults((prev) => [...prev, user]);
     } finally {
       setAdding(null);
     }

@@ -3,6 +3,7 @@ import { FileText, Upload, Search, Trash2, Download, ExternalLink, Filter } from
 import { format } from 'date-fns';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { getCached, setCached, invalidate } from '../api/cache';
 import Modal from '../components/Modal';
 
 const CATEGORY_STYLE = {
@@ -120,9 +121,9 @@ function UploadModal({ open, onClose, onUploaded, projects }) {
 
 export default function Documents() {
   const { user } = useAuth();
-  const [documents, setDocuments] = useState([]);
-  const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [documents, setDocuments] = useState(() => getCached('/documents') || []);
+  const [projects, setProjects] = useState(() => getCached('/projects') || []);
+  const [loading, setLoading] = useState(() => !getCached('/documents'));
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState({ project: 'all', category: 'all' });
   const [showUpload, setShowUpload] = useState(false);
@@ -130,6 +131,8 @@ export default function Documents() {
 
   useEffect(() => {
     Promise.all([api.get('/documents'), api.get('/projects')]).then(([dRes, pRes]) => {
+      setCached('/documents', dRes.data.documents);
+      setCached('/projects', pRes.data.projects);
       setDocuments(dRes.data.documents);
       setProjects(pRes.data.projects);
     }).finally(() => setLoading(false));

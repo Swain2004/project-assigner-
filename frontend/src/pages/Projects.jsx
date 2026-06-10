@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import Modal from '../components/Modal';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { getCached, setCached, invalidate } from '../api/cache';
 
 const STATUS_OPTIONS = ['active', 'on_hold', 'completed', 'archived'];
 const PRIORITY_OPTIONS = ['low', 'medium', 'high'];
@@ -100,33 +101,43 @@ function ProjectCard({ project, onDelete }) {
 function CreateProjectModal({ open, onClose, onCreated }) {
   const [form, setForm] = useState({ name: '', description: '', status: 'active', priority: 'medium', due_date: '', color: '#007AFF' });
   const [memberSearch, setMemberSearch] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
+  const [rawSearchResults, setRawSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState('');
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const searchResults = rawSearchResults.filter((u) => !selectedMembers.find((m) => m.id === u.id));
 
   useEffect(() => {
     if (!open) {
       setForm({ name: '', description: '', status: 'active', priority: 'medium', due_date: '', color: '#007AFF' });
       setSelectedMembers([]);
       setMemberSearch('');
+      setRawSearchResults([]);
+      setSearchError('');
       setError('');
     }
   }, [open]);
 
   useEffect(() => {
-    if (memberSearch.trim().length < 1) { setSearchResults([]); return; }
-    setSearchLoading(true);
+    if (memberSearch.trim().length < 1) { setRawSearchResults([]); setSearchError(''); setSearchLoading(false); return; }
+    setSearchError('');
     const timeout = setTimeout(async () => {
+      setSearchLoading(true);
       try {
         const res = await api.get(`/users/search?q=${encodeURIComponent(memberSearch.trim())}`);
-        setSearchResults((res.data.users || []).filter((u) => !selectedMembers.find((m) => m.id === u.id)));
-      } catch {}
-      finally { setSearchLoading(false); }
-    }, 300);
+        setRawSearchResults(res.data.users || []);
+      } catch (err) {
+        setSearchError('Could not load users');
+        setRawSearchResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 150);
     return () => clearTimeout(timeout);
-  }, [memberSearch, selectedMembers]);
+  }, [memberSearch]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -139,6 +150,7 @@ function CreateProjectModal({ open, onClose, onCreated }) {
         due_date: form.due_date || null,
         member_ids: selectedMembers.map((m) => m.id),
       });
+      invalidate('/projects');
       onCreated(res.data.project);
       onClose();
     } catch (err) {
@@ -216,7 +228,8 @@ function CreateProjectModal({ open, onClose, onCreated }) {
               ))}
             </div>
           )}
-          {!searchLoading && memberSearch.trim().length > 0 && searchResults.length === 0 && (
+          {searchError && <p className="text-xs text-red-500 mt-1 px-1">{searchError}</p>}
+          {!searchLoading && !searchError && memberSearch.trim().length > 0 && searchResults.length === 0 && (
             <p className="text-xs text-gray-400 mt-1 px-1">No users found for "{memberSearch}"</p>
           )}
           {selectedMembers.length > 0 && (
@@ -244,8 +257,8 @@ function CreateProjectModal({ open, onClose, onCreated }) {
 
 export default function Projects() {
   const { user } = useAuth();
-  const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [projects, setProjects] = useState(() => getCached('/projects') || []);
+  const [loading, setLoading] = useState(() => !getCached('/projects'));
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const [showCreate, setShowCreate] = useState(false);
@@ -255,6 +268,7 @@ export default function Projects() {
   async function fetchProjects() {
     try {
       const res = await api.get('/projects');
+      setCached('/projects', res.data.projects);
       setProjects(res.data.projects);
     } finally {
       setLoading(false);

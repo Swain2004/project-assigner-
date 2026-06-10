@@ -1,6 +1,4 @@
-import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import Lenis from 'lenis';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import Layout from './components/Layout';
@@ -13,27 +11,6 @@ import Documents from './pages/Documents';
 import Templates from './pages/Templates';
 import Users from './pages/Users';
 import Profile from './pages/Profile';
-
-function LenisInit() {
-  useEffect(() => {
-    const lenis = new Lenis({
-      duration: 1.2,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      smoothWheel: true,
-    });
-
-    function raf(time) {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
-    }
-
-    requestAnimationFrame(raf);
-
-    return () => lenis.destroy();
-  }, []);
-
-  return null;
-}
 
 function ProtectedRoute({ children, adminOnly = false }) {
   const { user, loading } = useAuth();
@@ -65,7 +42,6 @@ function PublicRoute({ children }) {
 function AppRoutes() {
   return (
     <>
-      <LenisInit />
       <Routes>
         <Route
           path="/login"

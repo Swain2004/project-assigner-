@@ -89,6 +89,18 @@ async function start() {
       console.log(` Frontend expected at ${FRONTEND_URL}`);
       console.log(` Environment: ${process.env.NODE_ENV || 'development'}\n`);
     });
+
+    server.on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        console.error(`\n Port ${PORT} already in use — killing occupying process and retrying...\n`);
+        const { execSync } = require('child_process');
+        try { execSync(`fuser -k ${PORT}/tcp`); } catch {}
+        setTimeout(() => server.listen(PORT), 1000);
+      } else {
+        console.error('Server error:', err.message);
+        process.exit(1);
+      }
+    });
   } catch (error) {
     console.error('Failed to start server:', error.message);
     process.exit(1);

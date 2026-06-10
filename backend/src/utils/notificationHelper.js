@@ -33,10 +33,13 @@ async function createNotification({
       );
       if (userResult.rows.length > 0) {
         const user = userResult.rows[0];
+        const absoluteUrl = actionUrl
+          ? actionUrl.startsWith('http') ? actionUrl : `${process.env.FRONTEND_URL || 'http://localhost:5173'}${actionUrl}`
+          : null;
         const { html, text } = buildNotificationEmail({
           title,
           message,
-          actionUrl,
+          actionUrl: absoluteUrl,
           recipientName: user.name,
         });
         sendEmail({ to: user.email, subject: title, html, text }).catch(() => {});

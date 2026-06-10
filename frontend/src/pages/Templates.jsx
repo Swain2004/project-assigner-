@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import Modal from '../components/Modal';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { getCached, setCached } from '../api/cache';
 
 const FIELD_TYPES = [
   { value: 'text', label: 'Short Text' },
@@ -244,15 +245,17 @@ function CreateTemplateModal({ open, onClose, onCreated, projects }) {
 
 export default function Templates() {
   const { user } = useAuth();
-  const [templates, setTemplates] = useState([]);
-  const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [templates, setTemplates] = useState(() => getCached('/templates') || []);
+  const [projects, setProjects] = useState(() => getCached('/projects') || []);
+  const [loading, setLoading] = useState(() => !getCached('/templates'));
   const [showCreate, setShowCreate] = useState(false);
   const [submitTarget, setSubmitTarget] = useState(null);
   const isAdmin = user?.role === 'admin';
 
   useEffect(() => {
     Promise.all([api.get('/templates'), api.get('/projects')]).then(([tRes, pRes]) => {
+      setCached('/templates', tRes.data.templates);
+      setCached('/projects', pRes.data.projects);
       setTemplates(tRes.data.templates);
       setProjects(pRes.data.projects);
     }).finally(() => setLoading(false));

@@ -4,6 +4,7 @@ import { CheckSquare, Calendar, Plus, Search, Filter, Circle } from 'lucide-reac
 import { format, isPast } from 'date-fns';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { getCached, setCached } from '../api/cache';
 import Modal from '../components/Modal';
 
 const STATUS_STYLE = { todo:'bg-gray-100 text-gray-600', in_progress:'bg-blue-100 text-blue-600', review:'bg-orange-100 text-orange-600', done:'bg-green-100 text-green-600' };
@@ -56,14 +57,16 @@ function TaskRow({ task, onStatusChange }) {
 
 export default function Tasks() {
   const { user } = useAuth();
-  const [tasks, setTasks] = useState([]);
-  const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [tasks, setTasks] = useState(() => getCached('/tasks') || []);
+  const [projects, setProjects] = useState(() => getCached('/projects') || []);
+  const [loading, setLoading] = useState(() => !getCached('/tasks'));
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState({ status: 'all', priority: 'all', project: 'all', myTasks: false });
 
   useEffect(() => {
     Promise.all([api.get('/tasks'), api.get('/projects')]).then(([tRes, pRes]) => {
+      setCached('/tasks', tRes.data.tasks);
+      setCached('/projects', pRes.data.projects);
       setTasks(tRes.data.tasks);
       setProjects(pRes.data.projects);
     }).finally(() => setLoading(false));
