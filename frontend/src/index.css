@@ -7,6 +7,19 @@
     box-sizing: border-box;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    cursor: default;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  input, textarea, select, [contenteditable] {
+    cursor: text;
+    user-select: text;
+    -webkit-user-select: text;
+  }
+
+  button, a, [role="button"], label {
+    cursor: pointer;
   }
 
   html {
@@ -87,7 +100,7 @@
   }
 
   .badge {
-    @apply inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-opacity-10 border border-current border-opacity-10;
+    @apply inline-flex items-center px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider border border-transparent shadow-sm;
   }
 
   .section-title {

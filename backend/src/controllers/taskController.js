@@ -277,15 +277,6 @@ async function updateTask(req, res, next) {
         createdBy: userId,
         sendEmailNotification: false,
       });
-      sendTaskAssignmentEmail({
-        assignedToId: assigned_to,
-        taskTitle: task.title,
-        taskDescription: description || prev.description,
-        projectName: prev.project_name,
-        priority: priority || prev.priority,
-        dueDate: due_date || prev.due_date,
-        assignedById: userId,
-      }).catch(() => {});
     }
 
     if (status && status !== prev.status) {
@@ -302,6 +293,7 @@ async function updateTask(req, res, next) {
           relatedType: 'task',
           actionUrl: `/projects/${task.project_id}`,
           createdBy: userId,
+          sendEmailNotification: false,
         });
       }
     }

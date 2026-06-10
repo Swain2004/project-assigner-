@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, FolderKanban, Search, Users, CheckSquare, Calendar, MoreHorizontal } from 'lucide-react';
+import { Plus, FolderKanban, Search, Users, CheckSquare, Calendar, MoreHorizontal, Crown } from 'lucide-react';
 import { format } from 'date-fns';
 import Modal from '../components/Modal';
 import AppleSelect from '../components/AppleSelect';
@@ -104,10 +104,15 @@ function CreateProjectModal({ open, onClose, onCreated }) {
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState('');
   const [selectedMembers, setSelectedMembers] = useState([]);
+  const [teamLeader, setTeamLeader] = useState(null);
+  const [teamLeaderSearch, setTeamLeaderSearch] = useState('');
+  const [rawLeaderResults, setRawLeaderResults] = useState([]);
+  const [leaderLoading, setLeaderLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const searchResults = rawSearchResults.filter((u) => !selectedMembers.find((m) => m.id === u.id));
+  const searchResults = rawSearchResults.filter((u) => !selectedMembers.find((m) => m.id === u.id) && u.id !== teamLeader?.id);
+  const leaderResults = rawLeaderResults.filter((u) => !selectedMembers.find((m) => m.id === u.id) && u.id !== teamLeader?.id);
 
   useEffect(() => {
     if (!open) {
@@ -116,6 +121,9 @@ function CreateProjectModal({ open, onClose, onCreated }) {
       setMemberSearch('');
       setRawSearchResults([]);
       setSearchError('');
+      setTeamLeader(null);
+      setTeamLeaderSearch('');
+      setRawLeaderResults([]);
       setError('');
     }
   }, [open]);
@@ -128,35 +136,43 @@ function CreateProjectModal({ open, onClose, onCreated }) {
       try {
         const res = await api.get(`/users/search?q=${encodeURIComponent(memberSearch.trim())}`);
         setRawSearchResults(res.data.users || []);
-      } catch (err) {
+      } catch {
         setSearchError('Could not load users');
         setRawSearchResults([]);
-      } finally {
-        setSearchLoading(false);
-      }
+      } finally { setSearchLoading(false); }
     }, 150);
     return () => clearTimeout(timeout);
   }, [memberSearch]);
 
+  useEffect(() => {
+    if (teamLeaderSearch.trim().length < 1) { setRawLeaderResults([]); setLeaderLoading(false); return; }
+    const timeout = setTimeout(async () => {
+      setLeaderLoading(true);
+      try {
+        const res = await api.get(`/users/search?q=${encodeURIComponent(teamLeaderSearch.trim())}`);
+        setRawLeaderResults(res.data.users || []);
+      } catch { setRawLeaderResults([]); } finally { setLeaderLoading(false); }
+    }, 150);
+    return () => clearTimeout(timeout);
+  }, [teamLeaderSearch]);
+
   async function handleSubmit(e) {
     e.preventDefault();
     if (!form.name.trim()) return setError('Project name is required');
-    setLoading(true);
-    setError('');
+    setLoading(true); setError('');
     try {
       const res = await api.post('/projects', {
         ...form,
         due_date: form.due_date || null,
         member_ids: selectedMembers.map((m) => m.id),
+        team_leader_id: teamLeader?.id || null,
       });
       invalidate('/projects');
       onCreated(res.data.project);
       onClose();
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create project');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }
 
   return (
@@ -173,19 +189,11 @@ function CreateProjectModal({ open, onClose, onCreated }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="label">Status</label>
-            <AppleSelect
-              value={form.status}
-              onChange={(e) => setForm({ ...form, status: e.target.value })}
-              options={STATUS_OPTIONS.map((s) => ({ value: s, label: s.replace('_', ' ') }))}
-            />
+            <AppleSelect value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} options={STATUS_OPTIONS.map((s) => ({ value: s, label: s.replace('_', ' ') }))} />
           </div>
           <div>
             <label className="label">Priority</label>
-            <AppleSelect
-              value={form.priority}
-              onChange={(e) => setForm({ ...form, priority: e.target.value })}
-              options={PRIORITY_OPTIONS.map((p) => ({ value: p, label: p.charAt(0).toUpperCase() + p.slice(1) }))}
-            />
+            <AppleSelect value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })} options={PRIORITY_OPTIONS.map((p) => ({ value: p, label: p.charAt(0).toUpperCase() + p.slice(1) }))} />
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -202,24 +210,63 @@ function CreateProjectModal({ open, onClose, onCreated }) {
             ))}
           </div>
         </div>
+
+        {/* Team Leader */}
+        <div>
+          <label className="label flex items-center gap-1.5">
+            <Crown size={13} className="text-amber-500" /> Team Leader <span className="text-gray-400 font-normal text-xs">(optional)</span>
+          </label>
+          {teamLeader ? (
+            <div className="flex items-center gap-2.5 p-2.5 bg-amber-50 border border-amber-200 rounded-ios">
+              <div className="w-8 h-8 bg-amber-400 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                {teamLeader.name.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-800 truncate">{teamLeader.name}</p>
+                <p className="text-xs text-gray-400 truncate">{teamLeader.email}</p>
+              </div>
+              <span className="text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full flex items-center gap-1"><Crown size={10} /> Leader</span>
+              <button type="button" onClick={() => setTeamLeader(null)} className="text-gray-400 hover:text-gray-600 text-lg leading-none ml-1">×</button>
+            </div>
+          ) : (
+            <div className="relative">
+              <input className="input-field pr-9" value={teamLeaderSearch} onChange={(e) => setTeamLeaderSearch(e.target.value)} placeholder="Search for a team leader..." />
+              {leaderLoading && <div className="absolute right-3 top-1/2 -translate-y-1/2"><div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" /></div>}
+              {leaderResults.length > 0 && (
+                <div className="mt-1 bg-white border border-gray-200 rounded-ios shadow-apple-sm overflow-hidden divide-y divide-gray-100">
+                  {leaderResults.map((u) => (
+                    <button key={u.id} type="button" onClick={() => { setTeamLeader(u); setTeamLeaderSearch(''); setRawLeaderResults([]); }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-amber-50 transition-colors text-left">
+                      <div className="w-8 h-8 bg-amber-400 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0">{u.name.charAt(0).toUpperCase()}</div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-800 truncate">{u.name}</p>
+                        <p className="text-xs text-gray-400 truncate">{u.email}</p>
+                      </div>
+                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full capitalize flex-shrink-0 ${u.role === 'admin' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'}`}>{u.role}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {!leaderLoading && teamLeaderSearch.trim().length > 0 && leaderResults.length === 0 && (
+                <p className="text-xs text-gray-400 mt-1 px-1">No users found for "{teamLeaderSearch}"</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Team Members */}
         <div>
           <label className="label">Add Team Members</label>
           <div className="relative">
             <input className="input-field pr-9" value={memberSearch} onChange={(e) => setMemberSearch(e.target.value)} placeholder="Search by name or email..." />
-            {searchLoading && (
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-              </div>
-            )}
+            {searchLoading && <div className="absolute right-3 top-1/2 -translate-y-1/2"><div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>}
           </div>
           {searchResults.length > 0 && (
             <div className="mt-1 bg-white border border-gray-200 rounded-ios shadow-apple-sm overflow-hidden divide-y divide-gray-100">
               {searchResults.map((u) => (
-                <button key={u.id} type="button" onClick={() => { setSelectedMembers([...selectedMembers, u]); setMemberSearch(''); setSearchResults([]); }}
+                <button key={u.id} type="button" onClick={() => { setSelectedMembers([...selectedMembers, u]); setMemberSearch(''); setRawSearchResults([]); }}
                   className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 transition-colors text-left">
-                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                    {u.name.charAt(0).toUpperCase()}
-                  </div>
+                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0">{u.name.charAt(0).toUpperCase()}</div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-800 truncate">{u.name}</p>
                     <p className="text-xs text-gray-400 truncate">{u.email}</p>
@@ -244,12 +291,11 @@ function CreateProjectModal({ open, onClose, onCreated }) {
             </div>
           )}
         </div>
+
         {error && <p className="text-sm text-red-500 font-medium">{error}</p>}
         <div className="flex gap-3 pt-2">
           <button type="button" onClick={onClose} className="btn-secondary flex-1">Cancel</button>
-          <button type="submit" disabled={loading} className="btn-primary flex-1">
-            {loading ? 'Creating...' : 'Create Project'}
-          </button>
+          <button type="submit" disabled={loading} className="btn-primary flex-1">{loading ? 'Creating...' : 'Create Project'}</button>
         </div>
       </form>
     </Modal>

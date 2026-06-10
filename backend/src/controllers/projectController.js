@@ -1,6 +1,14 @@
 const { query } = require('../config/database');
 const { createNotification, createBulkNotifications, logActivity } = require('../utils/notificationHelper');
 
+async function isProjectTeamLeader(userId, projectId) {
+  const r = await query(
+    'SELECT id FROM project_members WHERE project_id = $1 AND user_id = $2 AND role = $3',
+    [projectId, userId, 'team_leader']
+  );
+  return r.rows.length > 0;
+}
+
 async function getAllProjects(req, res, next) {
   try {
     const userId = req.user.id;
@@ -128,7 +136,7 @@ async function getProjectById(req, res, next) {
 
 async function createProject(req, res, next) {
   try {
-    const { name, description, status, priority, due_date, color, member_ids } = req.body;
+    const { name, description, status, priority, due_date, color, member_ids, team_leader_id } = req.body;
     const userId = req.user.id;
 
     const result = await query(
@@ -167,6 +175,24 @@ async function createProject(req, res, next) {
       }
     }
 
+    if (team_leader_id && team_leader_id !== userId) {
+      await query(
+        'INSERT INTO project_members (project_id, user_id, role, added_by) VALUES ($1, $2, $3, $4) ON CONFLICT (project_id, user_id) DO UPDATE SET role = $3',
+        [project.id, team_leader_id, 'team_leader', userId]
+      );
+      await createNotification({
+        userId: team_leader_id,
+        title: 'You are Team Leader',
+        message: `You have been assigned as Team Leader for "${project.name}"`,
+        type: 'project_assigned',
+        relatedId: project.id,
+        relatedType: 'project',
+        actionUrl: `/projects/${project.id}`,
+        createdBy: userId,
+        sendEmailNotification: false,
+      });
+    }
+
     await logActivity({ userId, action: 'created_project', entityType: 'project', entityId: project.id, metadata: { name: project.name } });
 
     res.status(201).json({ project });
@@ -179,6 +205,19 @@ async function updateProject(req, res, next) {
   try {
     const { id } = req.params;
     const { name, description, status, priority, due_date, color } = req.body;
+    const userId = req.user.id;
+    const isAdmin = req.user.role === 'admin';
+
+    if (!isAdmin) {
+      const [leaderCheck, projectCheck] = await Promise.all([
+        isProjectTeamLeader(userId, id),
+        query('SELECT created_by FROM projects WHERE id = $1', [id]),
+      ]);
+      if (projectCheck.rows.length === 0) return res.status(404).json({ message: 'Project not found' });
+      if (!leaderCheck && projectCheck.rows[0].created_by !== userId) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+    }
 
     const result = await query(
       `UPDATE projects SET
@@ -220,6 +259,12 @@ async function addMember(req, res, next) {
   try {
     const { id } = req.params;
     const { user_id, role } = req.body;
+    const isAdmin = req.user.role === 'admin';
+
+    if (!isAdmin) {
+      const isLeader = await isProjectTeamLeader(req.user.id, id);
+      if (!isLeader) return res.status(403).json({ message: 'Only admin or team leader can add members' });
+    }
 
     const projectResult = await query('SELECT name FROM projects WHERE id = $1', [id]);
     if (projectResult.rows.length === 0) {
@@ -258,6 +303,13 @@ async function addMember(req, res, next) {
 async function removeMember(req, res, next) {
   try {
     const { id, userId } = req.params;
+    const isAdmin = req.user.role === 'admin';
+
+    if (!isAdmin) {
+      const isLeader = await isProjectTeamLeader(req.user.id, id);
+      if (!isLeader) return res.status(403).json({ message: 'Only admin or team leader can remove members' });
+    }
+
     await query('DELETE FROM project_members WHERE project_id = $1 AND user_id = $2', [id, userId]);
     res.json({ message: 'Member removed successfully' });
   } catch (error) {

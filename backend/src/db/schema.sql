@@ -148,6 +148,19 @@ CREATE TABLE IF NOT EXISTS activity_logs (
 );
 
 -- =============================================
+-- MIGRATIONS: Add file support to templates
+-- =============================================
+ALTER TABLE templates ADD COLUMN IF NOT EXISTS file_url TEXT;
+ALTER TABLE templates ADD COLUMN IF NOT EXISTS original_name VARCHAR(255);
+ALTER TABLE templates ADD COLUMN IF NOT EXISTS mime_type VARCHAR(255);
+ALTER TABLE templates ADD COLUMN IF NOT EXISTS file_size BIGINT;
+
+ALTER TABLE template_submissions ADD COLUMN IF NOT EXISTS file_url TEXT;
+ALTER TABLE template_submissions ADD COLUMN IF NOT EXISTS original_name VARCHAR(255);
+ALTER TABLE template_submissions ADD COLUMN IF NOT EXISTS mime_type VARCHAR(255);
+ALTER TABLE template_submissions ADD COLUMN IF NOT EXISTS file_size BIGINT;
+
+-- =============================================
 -- INDEXES
 -- =============================================
 CREATE INDEX IF NOT EXISTS idx_project_members_project ON project_members(project_id);
