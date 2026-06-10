@@ -87,7 +87,7 @@
   }
 
   .badge {
-    @apply inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-opacity-10 border border-current border-opacity-10;
+    @apply inline-flex items-center px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider border border-transparent shadow-sm;
   }
 
   .section-title {

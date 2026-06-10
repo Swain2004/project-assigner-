@@ -412,12 +412,12 @@ export default function ProjectDetail() {
         </div>
       </div>
 
-      <div className="flex items-center gap-1 border-b border-gray-200">
+      <div className="flex items-center gap-1.5 bg-gray-100/80 p-1.5 rounded-[16px] w-fit overflow-x-auto max-w-full">
         {[{ key:'tasks',label:'Tasks',icon:CheckSquare,count:tasks.length},{ key:'documents',label:'Documents',icon:FileText,count:documents.length},{ key:'templates',label:'Templates',icon:Layout,count:templates.length},{ key:'members',label:'Members',icon:Users,count:project.members?.length}].map(({key,label,icon:Icon,count}) => (
           <button key={key} onClick={() => setTab(key)}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 -mb-px transition-all ${tab===key?'text-blue-500 border-blue-500':'text-gray-500 border-transparent hover:text-gray-700'}`}>
-            <Icon size={15} strokeWidth={2}/>{label}
-            {count > 0 && <span className="w-5 h-5 rounded-full bg-gray-100 text-gray-500 text-[11px] font-bold flex items-center justify-center">{count}</span>}
+            className={`flex items-center gap-2 px-4 py-2.5 text-[14px] font-semibold rounded-[12px] transition-all duration-300 whitespace-nowrap ${tab===key?'bg-white text-gray-900 shadow-[0_2px_8px_rgba(0,0,0,0.08)]':'text-gray-500 hover:text-gray-800 hover:bg-gray-200/50'}`}>
+            <Icon size={16} strokeWidth={2.5} className={tab===key ? 'text-blue-500' : 'text-gray-400'}/>{label}
+            {count > 0 && <span className={`min-w-[20px] h-[20px] px-1.5 rounded-full text-[11px] font-bold flex items-center justify-center transition-colors ${tab===key ? 'bg-blue-50 text-blue-600' : 'bg-gray-200/80 text-gray-500'}`}>{count}</span>}
           </button>
         ))}
       </div>
@@ -435,15 +435,15 @@ export default function ProjectDetail() {
           <DragDropContext onDragEnd={handleDragEnd}>
             <div className="flex gap-4 overflow-x-auto pb-32" data-lenis-prevent>
               {STATUSES.map((s) => (
-                <div key={s.key} className="flex-1 min-w-[240px] max-w-[300px]">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full" style={{ background: s.color }} />
-                      <span className="text-sm font-semibold text-gray-700">{s.label}</span>
-                      <span className="w-5 h-5 bg-gray-100 text-gray-500 text-[11px] font-bold rounded-full flex items-center justify-center">{tasksByStatus[s.key]?.length}</span>
+                <div key={s.key} className="flex-1 min-w-[280px] max-w-[320px] bg-gray-50/50 rounded-[24px] p-3 ring-1 ring-gray-150/60">
+                  <div className="flex items-center justify-between mb-4 px-2 pt-1">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ background: s.color }} />
+                      <span className="text-[15px] font-bold text-gray-800 tracking-tight">{s.label}</span>
+                      <span className="w-5 h-5 bg-white shadow-sm text-gray-500 text-[11px] font-bold rounded-full flex items-center justify-center">{tasksByStatus[s.key]?.length}</span>
                     </div>
-                    <button onClick={() => { setDefaultStatus(s.key); setShowTask(true); }} className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-blue-500 hover:bg-blue-50 rounded-md transition-all">
-                      <Plus size={14} strokeWidth={2.5} />
+                    <button onClick={() => { setDefaultStatus(s.key); setShowTask(true); }} className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-full transition-all">
+                      <Plus size={16} strokeWidth={2.5} />
                     </button>
                   </div>
                   <Droppable droppableId={s.key}>
@@ -451,7 +451,7 @@ export default function ProjectDetail() {
                       <div 
                         ref={provided.innerRef} 
                         {...provided.droppableProps}
-                        className={`space-y-2.5 min-h-[80px] rounded-ios p-1 transition-colors ${snapshot.isDraggingOver ? 'bg-gray-50' : ''}`}
+                        className={`space-y-3 min-h-[120px] rounded-[18px] transition-colors relative ${snapshot.isDraggingOver ? 'bg-gray-100/80 ring-1 ring-gray-200 inset-0' : ''}`}
                       >
                         {tasksByStatus[s.key]?.map((t, index) => (
                           <Draggable key={t.id.toString()} draggableId={t.id.toString()} index={index}>
@@ -469,9 +469,9 @@ export default function ProjectDetail() {
                           </Draggable>
                         ))}
                         {provided.placeholder}
-                        {tasksByStatus[s.key]?.length === 0 && !snapshot.isDraggingOver && (
-                          <div className="border-2 border-dashed border-gray-150 rounded-ios p-4 text-center">
-                            <p className="text-xs text-gray-300">No tasks</p>
+                        {((tasksByStatus[s.key]?.length === 0) || (tasksByStatus[s.key]?.length === 1 && snapshot.draggingFromThisWith)) && !snapshot.isDraggingOver && (
+                          <div className="absolute inset-x-1 inset-y-0 flex items-center justify-center border border-dashed border-gray-300/60 bg-gray-50/80 rounded-[18px]">
+                            <p className="text-[13px] font-medium text-gray-400">No tasks</p>
                           </div>
                         )}
                       </div>
@@ -497,26 +497,26 @@ export default function ProjectDetail() {
               <button onClick={() => setShowUpload(true)} className="btn-primary mt-4">Upload Document</button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {documents.map((doc) => (
-                <div key={doc.id} className="card p-4 hover:shadow-apple-md transition-shadow group">
-                  <div className="flex items-start gap-3">
-                    <div className={`w-10 h-10 rounded-ios flex items-center justify-center flex-shrink-0 border ${getFileColor(doc.mime_type)}`}>
-                      <FileText size={18} strokeWidth={1.5} />
+                <div key={doc.id} className="card p-5 rounded-2xl border border-gray-150/60 bg-gradient-to-b from-white to-gray-50/30 group hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-300">
+                  <div className="flex items-start gap-3.5">
+                    <div className={`w-11 h-11 rounded-[12px] flex items-center justify-center flex-shrink-0 border shadow-sm ${getFileColor(doc.mime_type)}`}>
+                      <FileText size={20} strokeWidth={2} />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-800 truncate">{doc.name}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">{doc.uploader_name} · {format(new Date(doc.created_at), 'MMM d')}</p>
-                      {doc.file_size && <p className="text-xs text-gray-400">{(doc.file_size/1024/1024).toFixed(1)} MB</p>}
+                    <div className="flex-1 min-w-0 pt-0.5">
+                      <p className="text-[15px] font-bold text-gray-900 tracking-tight truncate">{doc.name}</p>
+                      <p className="text-[12px] font-medium text-gray-400 mt-1">{doc.uploader_name} · {format(new Date(doc.created_at), 'MMM d')}</p>
+                      {doc.file_size && <p className="text-[12px] font-medium text-gray-400">{(doc.file_size/1024/1024).toFixed(1)} MB</p>}
                     </div>
                   </div>
-                  <div className="flex items-center justify-between mt-3">
-                    <span className="badge bg-gray-100 text-gray-500 capitalize">{doc.category?.replace('_',' ')}</span>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                      <a href={doc.file_url} target="_blank" rel="noreferrer" className="px-2 py-1 text-xs font-medium text-blue-500 hover:bg-blue-50 rounded transition-colors">View</a>
+                  <div className="flex items-center justify-between mt-4">
+                    <span className="badge bg-gray-100 text-gray-600 capitalize font-semibold">{doc.category?.replace('_',' ')}</span>
+                    <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all">
+                      <a href={doc.file_url} target="_blank" rel="noreferrer" className="px-3 py-1.5 text-xs font-bold text-blue-500 bg-blue-50 hover:bg-blue-100 rounded-full transition-colors">View</a>
                       {(doc.uploaded_by === user?.id || isAdmin) && (
                         <button onClick={async () => { if(!confirm('Delete?')) return; await api.delete(`/documents/${doc.id}`); setDocuments((p) => p.filter((d) => d.id !== doc.id)); }}
-                          className="p-1 text-gray-300 hover:text-red-500 rounded transition-colors"><Trash2 size={13} /></button>
+                          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"><Trash2 size={14} /></button>
                       )}
                     </div>
                   </div>
@@ -540,19 +540,19 @@ export default function ProjectDetail() {
               <Link to="/templates" className="btn-primary mt-4">Create Template</Link>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {templates.map((tmpl) => (
-                <div key={tmpl.id} className="card p-4">
+                <div key={tmpl.id} className="card p-5 rounded-2xl border border-gray-150/60 bg-gradient-to-b from-white to-gray-50/30 group hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-300">
                   <div className="flex items-start justify-between">
-                    <div className="w-9 h-9 bg-purple-50 border border-purple-100 rounded-ios flex items-center justify-center flex-shrink-0">
-                      <Layout size={16} className="text-purple-500" strokeWidth={1.5} />
+                    <div className="w-11 h-11 bg-purple-50 border border-purple-100 rounded-[12px] flex items-center justify-center flex-shrink-0 shadow-sm">
+                      <Layout size={20} className="text-purple-600" strokeWidth={2} />
                     </div>
-                    <span className="badge bg-gray-100 text-gray-500 capitalize">{tmpl.template_type}</span>
+                    <span className="badge bg-gray-100 text-gray-600 capitalize font-semibold">{tmpl.template_type}</span>
                   </div>
-                  <p className="text-sm font-bold text-gray-800 mt-3">{tmpl.name}</p>
-                  {tmpl.description && <p className="text-xs text-gray-400 mt-1 line-clamp-2">{tmpl.description}</p>}
-                  <p className="text-xs text-gray-400 mt-2">{tmpl.fields?.length || 0} fields · {tmpl.submission_count || 0} submissions</p>
-                  <Link to={`/templates`} className="mt-3 w-full btn-secondary text-xs py-2 flex items-center justify-center">Use Template</Link>
+                  <p className="text-[16px] font-bold text-gray-900 tracking-tight mt-4">{tmpl.name}</p>
+                  {tmpl.description && <p className="text-[13px] font-medium text-gray-500 mt-1.5 line-clamp-2">{tmpl.description}</p>}
+                  <p className="text-[12px] font-semibold text-gray-400 mt-3">{tmpl.fields?.length || 0} fields · {tmpl.submission_count || 0} submissions</p>
+                  <Link to={`/templates`} className="mt-4 w-full btn-secondary bg-gray-100/50 hover:bg-gray-100 text-gray-800 text-[13px] font-bold py-2.5 flex items-center justify-center rounded-xl transition-colors shadow-sm">Use Template</Link>
                 </div>
               ))}
             </div>
@@ -566,24 +566,24 @@ export default function ProjectDetail() {
             <p className="text-sm text-gray-500">{project.members?.length || 0} members</p>
             {isAdmin && <button onClick={() => setShowAddMember(true)} className="btn-primary"><Plus size={15} /> Add Member</button>}
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {project.members?.map((m) => (
-              <div key={m.id} className="card p-4 flex items-center gap-3 group">
-                <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                  {m.avatar_url ? <img src={m.avatar_url} className="w-10 h-10 rounded-full object-cover" alt="" /> : <span className="text-white font-bold">{m.name.charAt(0)}</span>}
+              <div key={m.id} className="card p-4 rounded-2xl border border-gray-150/60 bg-gradient-to-b from-white to-gray-50/30 flex items-center gap-3.5 group hover:shadow-[0_4px_20px_rgb(0,0,0,0.05)] transition-all duration-300">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm border border-white">
+                  {m.avatar_url ? <img src={m.avatar_url} className="w-full h-full rounded-full object-cover" alt="" /> : <span className="text-white font-bold text-lg">{m.name.charAt(0)}</span>}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-800 truncate">{m.name}</p>
-                  <p className="text-xs text-gray-400">{m.email}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="badge bg-gray-100 text-gray-500 capitalize">{m.project_role}</span>
-                    <span className="badge bg-blue-50 text-blue-600 capitalize">{m.role}</span>
+                <div className="flex-1 min-w-0 pt-0.5">
+                  <p className="text-[15px] font-bold text-gray-900 tracking-tight truncate">{m.name}</p>
+                  <p className="text-[12px] font-medium text-gray-400 truncate">{m.email}</p>
+                  <div className="flex items-center gap-1.5 mt-1.5">
+                    <span className="badge bg-gray-100 text-gray-600 capitalize font-semibold">{m.project_role}</span>
+                    <span className="badge bg-blue-50 text-blue-600 capitalize font-semibold">{m.role}</span>
                   </div>
                 </div>
                 {isAdmin && m.id !== user?.id && (
                   <button onClick={async () => { if(!confirm('Remove member?')) return; await api.delete(`/projects/${id}/members/${m.id}`); setProject((p) => ({...p, members: p.members.filter((x) => x.id !== m.id)})); }}
-                    className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-300 hover:text-red-500 rounded transition-all">
-                    <Trash2 size={14} />
+                    className="opacity-0 group-hover:opacity-100 p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-all duration-200">
+                    <Trash2 size={15} />
                   </button>
                 )}
               </div>
