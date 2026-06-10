@@ -6,6 +6,7 @@ import {
   FileText,
   Layout,
   Users,
+  Send,
   User,
   LogOut,
   X,
@@ -81,6 +82,7 @@ export default function Sidebar({ open, onClose }) {
               </p>
             </div>
             <NavItem to="/users" icon={Users} label="Users" onClick={onClose} />
+            <NavItem to="/submissions" icon={Send} label="Submissions" onClick={onClose} />
           </>
         )}
       </nav>

@@ -10,6 +10,7 @@ import Tasks from './pages/Tasks';
 import Documents from './pages/Documents';
 import Templates from './pages/Templates';
 import Users from './pages/Users';
+import Submissions from './pages/Submissions';
 import Profile from './pages/Profile';
 
 function ProtectedRoute({ children, adminOnly = false }) {
@@ -70,6 +71,14 @@ function AppRoutes() {
             element={
               <ProtectedRoute adminOnly>
                 <Users />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="submissions"
+            element={
+              <ProtectedRoute adminOnly>
+                <Submissions />
               </ProtectedRoute>
             }
           />

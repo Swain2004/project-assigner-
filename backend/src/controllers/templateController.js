@@ -192,4 +192,22 @@ async function getSubmissions(req, res, next) {
   }
 }
 
-module.exports = { getTemplates, getTemplateById, createTemplate, updateTemplate, deleteTemplate, submitTemplate, getSubmissions };
+async function deleteSubmission(req, res, next) {
+  try {
+    const { id } = req.params;
+    const result = await query(
+      'DELETE FROM template_submissions WHERE id = $1 RETURNING id',
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Submission not found' });
+    }
+
+    res.json({ message: 'Submission deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = { getTemplates, getTemplateById, createTemplate, updateTemplate, deleteTemplate, submitTemplate, getSubmissions, deleteSubmission };
