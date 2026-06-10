@@ -1,15 +1,13 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Upload, Users, CheckSquare, FileText, Layout, Calendar, MoreVertical, Search, Paperclip, AlertCircle, GripVertical } from 'lucide-react';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { ArrowLeft, Plus, Trash2, Upload, Users, CheckSquare, FileText, Layout, Calendar, MoreVertical, Search, Paperclip, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
-import { DndContext, useDraggable, useDroppable, closestCenter } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
 import Modal from '../components/Modal';
 import AppleSelect from '../components/AppleSelect';
 import MentionTextarea, { renderMentions } from '../components/MentionTextarea';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
-import { getCached, setCached } from '../api/cache';
 
 const STATUSES = [
   { key: 'todo', label: 'To Do', color: '#636366' },
@@ -17,37 +15,19 @@ const STATUSES = [
   { key: 'review', label: 'In Review', color: '#FF9F0A' },
   { key: 'done', label: 'Done', color: '#30D158' },
 ];
-const STATUSES_MAP = Object.fromEntries(STATUSES.map((s) => [s.key, s]));
 const PRIORITY_STYLE = { low: 'priority-low', medium: 'priority-medium', high: 'priority-high', urgent: 'priority-urgent' };
 
-function TaskCard({ task, onUpdate, onDelete }) {
+function TaskCard({ task, onUpdate, onDelete, innerRef, draggableProps, dragHandleProps, isDragging }) {
   const [menu, setMenu] = useState(false);
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: task.id,
-    data: { task },
-  });
-
-  const style = transform ? {
-    transform: CSS.Translate.toString(transform),
-  } : undefined;
-
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`bg-white border border-gray-150 rounded-ios p-3.5 shadow-apple-sm group hover:shadow-apple transition-shadow ${isDragging ? 'opacity-50 rotate-2 scale-105 shadow-apple-md z-50' : ''}`}
+    <div 
+      ref={innerRef} 
+      {...draggableProps} 
+      {...dragHandleProps} 
+      className={`bg-white border border-gray-150 rounded-ios p-3.5 shadow-apple-sm group transition-all ${isDragging ? 'shadow-apple-md ring-2 ring-blue-500 scale-[1.02] z-50 rotate-1' : 'hover:shadow-apple'}`}
     >
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-start gap-1.5 flex-1">
-          <button
-            {...attributes}
-            {...listeners}
-            className="p-0.5 text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing flex-shrink-0 mt-0.5"
-          >
-            <GripVertical size={14} />
-          </button>
-          <p className="text-sm font-semibold text-gray-800 leading-snug flex-1">{task.title}</p>
-        </div>
+        <p className="text-sm font-semibold text-gray-800 leading-snug flex-1">{task.title}</p>
         <div className="relative flex-shrink-0">
           <button onClick={() => setMenu(!menu)} className="p-1 rounded text-gray-300 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-all">
             <MoreVertical size={14} />
@@ -77,39 +57,6 @@ function TaskCard({ task, onUpdate, onDelete }) {
             </div>
           )}
         </div>
-      </div>
-    </div>
-  );
-}
-
-function TaskColumn({ status, tasks, onUpdate, onDelete, children }) {
-  const { setNodeRef, isOver } = useDroppable({
-    id: status.key,
-    data: { status },
-  });
-
-  return (
-    <div className="flex-1 min-w-[280px] max-w-[320px] bg-gray-50/50 rounded-[24px] p-3 ring-1 ring-gray-150/60 flex flex-col">
-      <div className="flex items-center justify-between mb-4 px-2 pt-1">
-        <div className="flex items-center gap-2.5">
-          <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ background: status.color }} />
-          <span className="text-[15px] font-bold text-gray-800 tracking-tight">{status.label}</span>
-          <span className="w-5 h-5 bg-white shadow-sm text-gray-500 text-[11px] font-bold rounded-full flex items-center justify-center">{tasks.length}</span>
-        </div>
-        {children}
-      </div>
-      <div
-        ref={setNodeRef}
-        className={`space-y-3 min-h-[120px] rounded-[18px] transition-colors relative flex-1 ${isOver ? 'bg-gray-100/80 ring-1 ring-gray-200' : ''}`}
-      >
-        {tasks.map((t) => (
-          <TaskCard key={t.id} task={t} onUpdate={onUpdate} onDelete={onDelete} />
-        ))}
-        {tasks.length === 0 && !isOver && (
-          <div className="absolute inset-x-1 inset-y-0 flex items-center justify-center border border-dashed border-gray-300/60 bg-gray-50/80 rounded-[18px]">
-            <p className="text-[13px] font-medium text-gray-400">No tasks</p>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -344,13 +291,11 @@ function getFileColor(mime) {
 export default function ProjectDetail() {
   const { id } = useParams();
   const { user } = useAuth();
-  const cacheKey = `project_${id}`;
-  const cached = getCached(cacheKey);
-  const [project, setProject] = useState(() => cached?.project || null);
-  const [tasks, setTasks] = useState(() => cached?.tasks || []);
-  const [documents, setDocuments] = useState(() => cached?.documents || []);
-  const [templates, setTemplates] = useState(() => cached?.templates || []);
-  const [loading, setLoading] = useState(() => !cached);
+  const [project, setProject] = useState(null);
+  const [tasks, setTasks] = useState([]);
+  const [documents, setDocuments] = useState([]);
+  const [templates, setTemplates] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('tasks');
   const [showTask, setShowTask] = useState(false);
   const [defaultStatus, setDefaultStatus] = useState('todo');
@@ -366,51 +311,21 @@ export default function ProjectDetail() {
         api.get(`/projects/${id}`), api.get(`/tasks?project_id=${id}`),
         api.get(`/documents?project_id=${id}`), api.get(`/templates?project_id=${id}`),
       ]);
-      const data = {
-        project: pRes.data.project,
-        tasks: tRes.data.tasks,
-        documents: dRes.data.documents,
-        templates: tmRes.data.templates
-      };
-      setCached(cacheKey, data);
-      setProject(data.project);
-      setTasks(data.tasks);
-      setDocuments(data.documents);
-      setTemplates(data.templates);
+      setProject(pRes.data.project); setTasks(tRes.data.tasks);
+      setDocuments(dRes.data.documents); setTemplates(tmRes.data.templates);
     } finally { setLoading(false); }
   }
 
-  const updateCache = useCallback((newTasks) => {
-    setCached(cacheKey, { project, tasks: newTasks, documents, templates });
-  }, [cacheKey, project, documents, templates]);
-
   const handleTaskUpdate = useCallback(async (taskId, updates) => {
     const res = await api.put(`/tasks/${taskId}`, updates);
-    const newTasks = tasks.map((t) => t.id === taskId ? res.data.task : t);
-    setTasks(newTasks);
-    updateCache(newTasks);
-  }, [tasks, updateCache]);
+    setTasks((prev) => prev.map((t) => t.id === taskId ? res.data.task : t));
+  }, []);
 
   const handleTaskDelete = useCallback(async (taskId) => {
     if (!confirm('Delete this task?')) return;
     await api.delete(`/tasks/${taskId}`);
-    const newTasks = tasks.filter((t) => t.id !== taskId);
-    setTasks(newTasks);
-    updateCache(newTasks);
-  }, [tasks, updateCache]);
-
-  const handleDragEnd = useCallback((event) => {
-    const { active, over } = event;
-    if (!over) return;
-
-    const taskId = active.id;
-    const newStatus = over.id;
-
-    const task = tasks.find((t) => t.id === taskId);
-    if (!task || task.status === newStatus) return;
-
-    handleTaskUpdate(taskId, { status: newStatus });
-  }, [tasks, handleTaskUpdate]);
+    setTasks((prev) => prev.filter((t) => t.id !== taskId));
+  }, []);
 
   if (loading) return <div className="max-w-7xl mx-auto"><div className="skeleton h-40 rounded-ios-lg" /></div>;
   if (!project) return <div className="text-center py-20"><p className="text-gray-400">Project not found</p><Link to="/projects" className="btn-primary mt-4 inline-flex">Back</Link></div>;
@@ -420,6 +335,45 @@ export default function ProjectDetail() {
   const inProgressTasks = tasks.filter((t) => t.status === 'in_progress').length;
   const pct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
   const tasksByStatus = STATUSES.reduce((acc, s) => { acc[s.key] = tasks.filter((t) => t.status === s.key); return acc; }, {});
+
+  const handleDragEnd = async (result) => {
+    const { destination, source, draggableId } = result;
+
+    if (!destination) return;
+    if (destination.droppableId === source.droppableId && destination.index === source.index) return;
+
+    const newStatus = destination.droppableId;
+    const taskId = draggableId; // This is a UUID, don't parse to Int!
+    
+    // Backup tasks for revert
+    const oldTasks = [...tasks];
+
+    // Optimistic update with correct reordering
+    setTasks((prevTasks) => {
+      const grouped = STATUSES.reduce((acc, s) => { acc[s.key] = prevTasks.filter((t) => t.status === s.key); return acc; }, {});
+      
+      const sourceList = Array.from(grouped[source.droppableId] || []);
+      const [movedTask] = sourceList.splice(source.index, 1);
+      if (!movedTask) return prevTasks;
+
+      movedTask.status = newStatus;
+      
+      const destList = source.droppableId === destination.droppableId ? sourceList : Array.from(grouped[destination.droppableId] || []);
+      destList.splice(destination.index, 0, movedTask);
+      
+      grouped[source.droppableId] = sourceList;
+      grouped[destination.droppableId] = destList;
+      
+      return Object.values(grouped).flat();
+    });
+
+    try {
+      await api.put(`/tasks/${taskId}`, { status: newStatus });
+    } catch (err) {
+      setTasks(oldTasks);
+      console.error('Failed to move task:', err);
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto space-y-5 animate-fade-in">
@@ -478,17 +432,55 @@ export default function ProjectDetail() {
               </button>
             )}
           </div>
-          <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <div className="flex gap-4 overflow-x-auto pb-4" data-lenis-prevent>
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <div className="flex gap-4 overflow-x-auto pb-32" data-lenis-prevent>
               {STATUSES.map((s) => (
-                <TaskColumn key={s.key} status={s} tasks={tasksByStatus[s.key] || []} onUpdate={handleTaskUpdate} onDelete={handleTaskDelete}>
-                  <button onClick={() => { setDefaultStatus(s.key); setShowTask(true); }} className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-full transition-all">
-                    <Plus size={16} strokeWidth={2.5} />
-                  </button>
-                </TaskColumn>
+                <div key={s.key} className="flex-1 min-w-[280px] max-w-[320px] bg-gray-50/50 rounded-[24px] p-3 ring-1 ring-gray-150/60">
+                  <div className="flex items-center justify-between mb-4 px-2 pt-1">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ background: s.color }} />
+                      <span className="text-[15px] font-bold text-gray-800 tracking-tight">{s.label}</span>
+                      <span className="w-5 h-5 bg-white shadow-sm text-gray-500 text-[11px] font-bold rounded-full flex items-center justify-center">{tasksByStatus[s.key]?.length}</span>
+                    </div>
+                    <button onClick={() => { setDefaultStatus(s.key); setShowTask(true); }} className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-full transition-all">
+                      <Plus size={16} strokeWidth={2.5} />
+                    </button>
+                  </div>
+                  <Droppable droppableId={s.key}>
+                    {(provided, snapshot) => (
+                      <div 
+                        ref={provided.innerRef} 
+                        {...provided.droppableProps}
+                        className={`space-y-3 min-h-[120px] rounded-[18px] transition-colors relative ${snapshot.isDraggingOver ? 'bg-gray-100/80 ring-1 ring-gray-200 inset-0' : ''}`}
+                      >
+                        {tasksByStatus[s.key]?.map((t, index) => (
+                          <Draggable key={t.id.toString()} draggableId={t.id.toString()} index={index}>
+                            {(provided, snapshot) => (
+                              <TaskCard 
+                                task={t} 
+                                onUpdate={handleTaskUpdate} 
+                                onDelete={handleTaskDelete}
+                                innerRef={provided.innerRef}
+                                draggableProps={provided.draggableProps}
+                                dragHandleProps={provided.dragHandleProps}
+                                isDragging={snapshot.isDragging}
+                              />
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                        {((tasksByStatus[s.key]?.length === 0) || (tasksByStatus[s.key]?.length === 1 && snapshot.draggingFromThisWith)) && !snapshot.isDraggingOver && (
+                          <div className="absolute inset-x-1 inset-y-0 flex items-center justify-center border border-dashed border-gray-300/60 bg-gray-50/80 rounded-[18px]">
+                            <p className="text-[13px] font-medium text-gray-400">No tasks</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </Droppable>
+                </div>
               ))}
             </div>
-          </DndContext>
+          </DragDropContext>
         </div>
       )}
 
@@ -600,7 +592,7 @@ export default function ProjectDetail() {
         </div>
       )}
 
-      <CreateTaskModal open={showTask} onClose={() => setShowTask(false)} onCreated={(t) => { const newTasks = [t, ...tasks]; setTasks(newTasks); updateCache(newTasks); }} projectId={id} members={project.members || []} defaultStatus={defaultStatus} />
+      <CreateTaskModal open={showTask} onClose={() => setShowTask(false)} onCreated={(t) => setTasks((p) => [t,...p])} projectId={id} members={project.members || []} defaultStatus={defaultStatus} />
       <UploadModal open={showUpload} onClose={() => setShowUpload(false)} onUploaded={(d) => setDocuments((p) => [d,...p])} projectId={id} />
       <AddMemberModal open={showAddMember} onClose={() => setShowAddMember(false)} onAdded={(m) => setProject((p) => ({...p, members: [...(p.members||[]), m]}))} projectId={id} existingMemberIds={project?.members?.map((m) => m.id) || []} />
     </div>
