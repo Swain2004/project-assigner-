@@ -20,22 +20,66 @@ const PRIORITY_COLORS = {
   urgent: 'text-red-500',
 };
 
+const CARD_STYLES = {
+  blue: {
+    bg: 'from-blue-500/10 to-blue-600/5 hover:from-blue-500/15 hover:to-blue-600/10',
+    iconBg: 'bg-blue-500',
+    iconColor: 'text-white',
+    numberColor: 'text-blue-600',
+  },
+  orange: {
+    bg: 'from-orange-500/10 to-orange-600/5 hover:from-orange-500/15 hover:to-orange-600/10',
+    iconBg: 'bg-orange-500',
+    iconColor: 'text-white',
+    numberColor: 'text-orange-600',
+  },
+  green: {
+    bg: 'from-green-500/10 to-green-600/5 hover:from-green-500/15 hover:to-green-600/10',
+    iconBg: 'bg-green-500',
+    iconColor: 'text-white',
+    numberColor: 'text-green-600',
+  },
+  purple: {
+    bg: 'from-purple-500/10 to-purple-600/5 hover:from-purple-500/15 hover:to-purple-600/10',
+    iconBg: 'bg-purple-500',
+    iconColor: 'text-white',
+    numberColor: 'text-purple-600',
+  },
+  teal: {
+    bg: 'from-teal-500/10 to-teal-600/5 hover:from-teal-500/15 hover:to-teal-600/10',
+    iconBg: 'bg-teal-500',
+    iconColor: 'text-white',
+    numberColor: 'text-teal-600',
+  },
+};
+
 function StatCard({ icon: Icon, label, value, color, sublabel }) {
-  const colorStr = typeof color === 'string' ? color : color.bg;
-  const colorText = typeof color === 'string' ? color.replace('bg-', 'text-') : color.text;
-  
+  const style = CARD_STYLES[color] || CARD_STYLES.blue;
+
   return (
-    <div className="card p-4 sm:p-6 flex flex-col justify-between h-full cursor-pointer group hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-300 border border-gray-150/60 bg-gradient-to-b from-white to-gray-50/30">
-      <div className="flex items-start justify-between">
-        <div className={`w-12 h-12 rounded-[14px] flex items-center justify-center ${colorStr.replace('bg-', 'bg-').replace('-500', '-50')} shadow-sm group-hover:scale-105 transition-transform duration-300`}>
-          <Icon className={colorText} size={22} strokeWidth={2.5} />
+    <div className={`relative overflow-hidden rounded-2xl p-5 sm:p-6 bg-gradient-to-br ${style.bg} border border-gray-100/50 cursor-pointer group transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:border-gray-200`}>
+      {/* Background decoration */}
+      <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/40 rounded-full blur-2xl group-hover:bg-white/60 transition-colors duration-300" />
+
+      <div className="relative flex flex-col h-full">
+        {/* Icon and label row */}
+        <div className="flex items-start justify-between mb-3">
+          <span className="text-[11px] sm:text-xs font-semibold text-gray-500 tracking-wide">{label}</span>
+          <div className={`w-9 h-9 rounded-xl ${style.iconBg} flex items-center justify-center shadow-lg shadow-${color}-500/25 group-hover:scale-110 transition-transform duration-300`}>
+            <Icon className={style.iconColor} size={18} strokeWidth={2} />
+          </div>
+        </div>
+
+        {/* Value */}
+        <div className="mt-auto">
+          <span className={`text-[32px] sm:text-[42px] font-bold ${style.numberColor} tracking-tight leading-none`}>
+            {value}
+          </span>
+          {sublabel && (
+            <p className="text-[12px] text-gray-400 mt-1.5 font-medium">{sublabel}</p>
+          )}
         </div>
       </div>
-      <div className="mt-4 sm:mt-6">
-        <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">{label}</p>
-        <h3 className="text-[28px] sm:text-[40px] leading-none font-black text-gray-900 tracking-tight">{value}</h3>
-      </div>
-      {sublabel && <p className="text-sm font-semibold text-gray-400 mt-3">{sublabel}</p>}
     </div>
   );
 }
@@ -167,13 +211,13 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <StatCard icon={FolderKanban} label="Active Projects" value={stats?.active_projects ?? 0} color="bg-blue-500" />
-        <StatCard icon={CheckSquare} label="My Tasks" value={stats?.my_tasks ?? 0} color="bg-orange-500" sublabel="Pending" />
-        <StatCard icon={TrendingUp} label="Completed" value={stats?.completed_tasks ?? 0} color="bg-green-500" sublabel="Tasks done" />
+        <StatCard icon={FolderKanban} label="Active Projects" value={stats?.active_projects ?? 0} color="blue" />
+        <StatCard icon={CheckSquare} label="My Tasks" value={stats?.my_tasks ?? 0} color="orange" sublabel="Pending" />
+        <StatCard icon={TrendingUp} label="Completed" value={stats?.completed_tasks ?? 0} color="green" sublabel="Tasks done" />
         {user?.role === 'admin' ? (
-          <StatCard icon={Users} label="Team Members" value={stats?.team_members ?? 0} color="bg-purple-500" />
+          <StatCard icon={Users} label="Team Members" value={stats?.team_members ?? 0} color="purple" />
         ) : (
-          <StatCard icon={Circle} label="Completed" value={stats?.completed_tasks ?? 0} color="bg-teal-500" sublabel="This month" />
+          <StatCard icon={Circle} label="Completed" value={stats?.completed_tasks ?? 0} color="teal" sublabel="This month" />
         )}
       </div>
 

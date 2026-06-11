@@ -55,7 +55,7 @@ export default function AppleSelect({ value, onChange, options, className = '', 
         onClick={handleToggle}
         className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[14px] font-medium text-gray-900 flex items-center justify-between shadow-sm transition-all focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 hover:border-gray-300"
       >
-        <span className={!selectedOption ? 'text-gray-400' : ''}>
+        <span className={`${!selectedOption ? 'text-gray-400' : ''} whitespace-nowrap`}>
           {selectedOption ? selectedOption.label : placeholder}
         </span>
         <ChevronDown size={16} className={`text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
@@ -75,7 +75,7 @@ export default function AppleSelect({ value, onChange, options, className = '', 
                   value === option.value ? 'bg-blue-500 text-white' : 'text-gray-700 hover:bg-gray-100/80 hover:text-gray-900'
                 }`}
               >
-                <span>{option.label}</span>
+                <span className="whitespace-nowrap">{option.label}</span>
                 {value === option.value && <Check size={14} className="text-white" strokeWidth={3} />}
               </li>
             ))}

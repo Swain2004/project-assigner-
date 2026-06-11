@@ -592,7 +592,7 @@ export default function ProjectDetail() {
         <div>
           <div className="flex justify-between items-center mb-4">
             <p className="text-sm text-gray-500">{templates.length} templates</p>
-            <Link to={`/templates?project=${id}`} className="btn-primary"><Plus size={15} /> New Template</Link>
+            <Link to={`/templates?project=${id}`} className="btn-primary"><Plus size={15} /> Upload Template</Link>
           </div>
           {templates.length === 0 ? (
             <div className="card flex flex-col items-center py-16 text-center">

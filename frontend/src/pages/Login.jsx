@@ -168,9 +168,6 @@ export default function Login() {
           </div>
         </div>
 
-        <p className="text-center text-xs text-gray-400 mt-6">
-          The first registered user becomes the admin.
-        </p>
       </div>
     </div>
   );
