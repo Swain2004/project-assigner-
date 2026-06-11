@@ -8,6 +8,11 @@ function getTransporter() {
   if (transporter) return transporter;
 
   transporter = nodemailer.createTransport({
+    pool: true,
+    maxConnections: 1,
+    maxMessages: Infinity,
+    rateDelta: 1000,
+    rateLimit: 3,
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT) || 587,
     secure: process.env.SMTP_SECURE === 'true',
@@ -155,4 +160,218 @@ function buildTaskAssignmentEmail({ recipientName, taskTitle, taskDescription, p
   return { html, text };
 }
 
-module.exports = { sendEmail, buildNotificationEmail, buildTaskAssignmentEmail };
+function buildTeamLeaderEmail({ recipientName, projectName, projectUrl, memberNames = [], assignedByName }) {
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const absoluteUrl = projectUrl
+    ? (projectUrl.startsWith('http') ? projectUrl : `${frontendUrl}${projectUrl}`)
+    : frontendUrl;
+
+  const membersHtml = memberNames.length > 0
+    ? memberNames.map((name) => `
+        <tr>
+          <td style="padding:8px 0;border-bottom:1px solid #e5e5ea;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:32px;height:32px;background:#007AFF;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:13px;flex-shrink:0;">${name.charAt(0).toUpperCase()}</div>
+              <span style="font-size:14px;color:#1d1d1f;font-weight:500;">${name}</span>
+            </div>
+          </td>
+        </tr>`).join('')
+    : `<tr><td style="padding:8px 0;font-size:14px;color:#8e8e93;">No other members added yet.</td></tr>`;
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif; background: #f5f5f7; margin: 0; padding: 0; color: #1d1d1f; }
+        .container { max-width: 580px; margin: 32px auto; background: #ffffff; border-radius: 18px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.10); }
+        .header { background: linear-gradient(135deg, #FF9F0A 0%, #FF6B00 100%); padding: 28px 36px; }
+        .header-logo { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.8); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 4px; }
+        .header-title { font-size: 22px; font-weight: 700; color: #ffffff; margin: 0; letter-spacing: -0.3px; }
+        .body { padding: 36px; }
+        .crown-badge { display: inline-flex; align-items: center; gap: 6px; background: #FFF3E0; color: #E65100; font-size: 13px; font-weight: 700; padding: 6px 14px; border-radius: 20px; border: 1px solid #FFE0B2; margin-bottom: 20px; }
+        .project-card { background: #f5f5f7; border-radius: 14px; padding: 18px 22px; margin: 20px 0; border-left: 4px solid #FF9F0A; }
+        .project-name { font-size: 18px; font-weight: 700; color: #1d1d1f; margin: 0 0 4px; }
+        .project-meta { font-size: 13px; color: #8e8e93; }
+        .section-title { font-size: 13px; font-weight: 700; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.5px; margin: 24px 0 12px; }
+        .members-table { width: 100%; border-collapse: collapse; }
+        .cta { text-align: center; margin: 28px 0 8px; }
+        .btn { display: inline-block; background: #FF9F0A; color: #ffffff !important; text-decoration: none; padding: 13px 28px; border-radius: 12px; font-size: 15px; font-weight: 600; }
+        .footer { padding: 20px 36px; background: #f5f5f7; text-align: center; font-size: 12px; color: #8e8e93; border-top: 1px solid #e5e5ea; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <div class="header-logo">Project Assigner</div>
+          <div class="header-title">You're the Team Leader! 👑</div>
+        </div>
+        <div class="body">
+          <p style="font-size:15px;color:#48484a;margin:0 0 16px;">Hi <strong>${recipientName}</strong>,</p>
+          <div class="crown-badge">👑 Team Leader</div>
+          <p style="font-size:15px;color:#48484a;line-height:1.6;margin:0 0 4px;">
+            ${assignedByName ? `<strong>${assignedByName}</strong> has assigned you as` : 'You have been assigned as'} 
+            <strong>Team Leader</strong> for the following project. You have full administrative rights for this project — you can add/remove members and manage all tasks.
+          </p>
+          <div class="project-card">
+            <div class="project-name">${projectName}</div>
+            <div class="project-meta">You have admin rights for this project</div>
+          </div>
+          <div class="section-title">Team Members (${memberNames.length})</div>
+          <table class="members-table">
+            ${membersHtml}
+          </table>
+          <div class="cta">
+            <a href="${absoluteUrl}" class="btn">Open Project</a>
+          </div>
+        </div>
+        <div class="footer">
+          <p style="margin:0">Project Assigner &mdash; You received this because you were assigned as team leader.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const memberListText = memberNames.length > 0 ? memberNames.map((n) => `  • ${n}`).join('\n') : '  (no other members yet)';
+  const text = `Hi ${recipientName},\n\nYou have been assigned as Team Leader for "${projectName}"${assignedByName ? ` by ${assignedByName}` : ''}.\n\nAs team leader you can add/remove members and manage all tasks.\n\nTeam Members:\n${memberListText}\n\nView Project: ${absoluteUrl}`;
+
+  return { html, text };
+}
+
+function buildAddedToProjectEmail({ recipientName, projectName, projectUrl, teamLeaderName, memberNames = [] }) {
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const absoluteUrl = projectUrl
+    ? (projectUrl.startsWith('http') ? projectUrl : `${frontendUrl}${projectUrl}`)
+    : frontendUrl;
+
+  const otherMembers = memberNames.filter((n) => n !== recipientName);
+  const membersHtml = otherMembers.length > 0
+    ? otherMembers.map((name) => `
+        <tr>
+          <td style="padding:6px 0;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:28px;height:28px;background:#007AFF;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:12px;flex-shrink:0;">${name.charAt(0).toUpperCase()}</div>
+              <span style="font-size:14px;color:#1d1d1f;font-weight:500;">${name}</span>
+            </div>
+          </td>
+        </tr>`).join('')
+    : `<tr><td style="padding:8px 0;font-size:14px;color:#8e8e93;">No other members yet.</td></tr>`;
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif; background: #f5f5f7; margin: 0; padding: 0; color: #1d1d1f; }
+        .container { max-width: 580px; margin: 32px auto; background: #ffffff; border-radius: 18px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.10); }
+        .header { background: #007AFF; padding: 28px 36px; text-align: center; }
+        .header h1 { color: white; font-size: 22px; font-weight: 600; margin: 0; letter-spacing: -0.3px; }
+        .body { padding: 36px; }
+        .greeting { font-size: 15px; color: #48484a; margin: 0 0 20px; }
+        .project-card { background: #f5f5f7; border-radius: 14px; padding: 18px 22px; margin: 20px 0; border-left: 4px solid #007AFF; }
+        .project-name { font-size: 18px; font-weight: 700; color: #1d1d1f; margin: 0 0 4px; }
+        .team-leader { display: inline-flex; align-items: center; gap: 6px; background: #FFF3E0; color: #E65100; font-size: 13px; font-weight: 700; padding: 6px 14px; border-radius: 20px; border: 1px solid #FFE0B2; margin: 8px 0; }
+        .section-title { font-size: 13px; font-weight: 700; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.5px; margin: 20px 0 12px; }
+        .members-table { width: 100%; border-collapse: collapse; }
+        .cta { text-align: center; margin: 28px 0 8px; }
+        .btn { display: inline-block; background: #007AFF; color: #ffffff !important; text-decoration: none; padding: 13px 28px; border-radius: 12px; font-size: 15px; font-weight: 600; }
+        .footer { padding: 20px 36px; background: #f5f5f7; text-align: center; font-size: 12px; color: #8e8e93; border-top: 1px solid #e5e5ea; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>Project Assigner</h1>
+        </div>
+        <div class="body">
+          <p class="greeting">Hi <strong>${recipientName}</strong>,</p>
+          <p style="font-size:15px;color:#48484a;line-height:1.6;margin:0 0 16px;">
+            You have been added to the project <strong>"${projectName}"</strong>.
+          </p>
+          <div class="project-card">
+            <div class="project-name">${projectName}</div>
+            ${teamLeaderName ? `<div class="team-leader">👑 ${teamLeaderName} is your Team Leader</div>` : '<p style="font-size:13px;color:#8e8e93;margin:4px 0 0;">No team leader assigned yet.</p>'}
+          </div>
+          <div class="section-title">Team Members (${otherMembers.length})</div>
+          <table class="members-table">
+            ${membersHtml}
+          </table>
+          <div class="cta">
+            <a href="${absoluteUrl}" class="btn">View Project</a>
+          </div>
+        </div>
+        <div class="footer">
+          <p style="margin:0">Project Assigner &mdash; You received this because you were added to a project.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const memberListText = otherMembers.length > 0 ? otherMembers.map((n) => `  • ${n}`).join('\n') : '  (no other members yet)';
+  const text = `Hi ${recipientName},\n\nYou have been added to the project "${projectName}".\n\n${teamLeaderName ? `👑 Team Leader: ${teamLeaderName}\n` : ''}\nTeam Members:\n${memberListText}\n\nView Project: ${absoluteUrl}`;
+
+  return { html, text };
+}
+
+function buildPasswordResetEmail({ recipientName, resetUrl }) {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif; background: #f5f5f7; margin: 0; padding: 0; color: #1d1d1f; }
+        .container { max-width: 580px; margin: 32px auto; background: #ffffff; border-radius: 18px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.10); }
+        .header { background: #007AFF; padding: 28px 36px; text-align: center; }
+        .header h1 { color: white; font-size: 22px; font-weight: 600; margin: 0; letter-spacing: -0.3px; }
+        .body { padding: 36px; }
+        .greeting { font-size: 15px; color: #48484a; margin: 0 0 20px; }
+        .message { font-size: 15px; color: #48484a; line-height: 1.6; margin: 0 0 24px; }
+        .warning { background: #FFF3E0; border-left: 4px solid #FF9F0A; padding: 16px; border-radius: 8px; margin: 20px 0; font-size: 14px; color: #E65100; }
+        .cta { text-align: center; margin: 28px 0 8px; }
+        .btn { display: inline-block; background: #007AFF; color: #ffffff !important; text-decoration: none; padding: 13px 28px; border-radius: 12px; font-size: 15px; font-weight: 600; }
+        .footer { padding: 20px 36px; background: #f5f5f7; text-align: center; font-size: 12px; color: #8e8e93; border-top: 1px solid #e5e5ea; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>Project Assigner</h1>
+        </div>
+        <div class="body">
+          <p class="greeting">Hi <strong>${recipientName}</strong>,</p>
+          <p class="message">
+            We received a request to reset your password. Click the button below to create a new password for your account.
+          </p>
+          <div class="cta">
+            <a href="${resetUrl}" class="btn">Reset Password</a>
+          </div>
+          <div class="warning">
+            <strong>Important:</strong> This link will expire in 1 hour. If you didn't request this password reset, please ignore this email.
+          </div>
+          <p style="font-size:13px;color:#8e8e93;margin-top:20px;">
+            If the button doesn't work, copy and paste this link into your browser:<br>
+            <a href="${resetUrl}" style="color:#007AFF;word-break:break-all;">${resetUrl}</a>
+          </p>
+        </div>
+        <div class="footer">
+          <p style="margin:0">Project Assigner &mdash; Aitechtures &bull; You received this because a password reset was requested.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const text = `Hi ${recipientName},\n\nWe received a request to reset your password. Use this link to create a new password:\n\n${resetUrl}\n\nThis link will expire in 1 hour.\n\nIf you didn't request this password reset, please ignore this email.`;
+
+  return { html, text };
+}
+
+module.exports = { sendEmail, buildNotificationEmail, buildTaskAssignmentEmail, buildTeamLeaderEmail, buildAddedToProjectEmail, buildPasswordResetEmail };

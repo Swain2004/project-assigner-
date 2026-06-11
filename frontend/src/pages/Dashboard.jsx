@@ -25,15 +25,15 @@ function StatCard({ icon: Icon, label, value, color, sublabel }) {
   const colorText = typeof color === 'string' ? color.replace('bg-', 'text-') : color.text;
   
   return (
-    <div className="card p-6 flex flex-col justify-between h-full cursor-pointer group hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-300 border border-gray-150/60 bg-gradient-to-b from-white to-gray-50/30">
+    <div className="card p-4 sm:p-6 flex flex-col justify-between h-full cursor-pointer group hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-300 border border-gray-150/60 bg-gradient-to-b from-white to-gray-50/30">
       <div className="flex items-start justify-between">
         <div className={`w-12 h-12 rounded-[14px] flex items-center justify-center ${colorStr.replace('bg-', 'bg-').replace('-500', '-50')} shadow-sm group-hover:scale-105 transition-transform duration-300`}>
           <Icon className={colorText} size={22} strokeWidth={2.5} />
         </div>
       </div>
-      <div className="mt-6">
-        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">{label}</p>
-        <h3 className="text-[40px] leading-none font-black text-gray-900 tracking-tight">{value}</h3>
+      <div className="mt-4 sm:mt-6">
+        <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">{label}</p>
+        <h3 className="text-[28px] sm:text-[40px] leading-none font-black text-gray-900 tracking-tight">{value}</h3>
       </div>
       {sublabel && <p className="text-sm font-semibold text-gray-400 mt-3">{sublabel}</p>}
     </div>
@@ -159,14 +159,14 @@ export default function Dashboard() {
   return (
     <div className="space-y-8 animate-slide-up max-w-7xl mx-auto">
       <div className="px-1">
-        <h2 className="text-[34px] font-black text-gray-900 tracking-tight leading-tight">
+        <h2 className="text-[28px] sm:text-[34px] font-black text-gray-900 tracking-tight leading-tight break-words">
           Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'},{' '}
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-500">{user?.name ? user.name.split(' ')[0] : 'there'}</span>
         </h2>
         <p className="text-[15px] text-gray-500 mt-2 font-medium">Here's what's happening with your projects today.</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard icon={FolderKanban} label="Active Projects" value={stats?.active_projects ?? 0} color="bg-blue-500" />
         <StatCard icon={CheckSquare} label="My Tasks" value={stats?.my_tasks ?? 0} color="bg-orange-500" sublabel="Pending" />
         <StatCard icon={TrendingUp} label="Completed" value={stats?.completed_tasks ?? 0} color="bg-green-500" sublabel="Tasks done" />

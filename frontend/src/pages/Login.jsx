@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, Briefcase, AlertCircle } from 'lucide-react';
 
 export default function Login() {
@@ -91,7 +91,7 @@ export default function Login() {
                 name="email"
                 value={form.email}
                 onChange={handleChange}
-                placeholder="you@company.com"
+                placeholder="you@aitechtures.com"
                 required
                 className="input-field"
                 autoComplete="email"
@@ -99,7 +99,17 @@ export default function Login() {
             </div>
 
             <div>
-              <label className="label">Password</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="label">Password</label>
+                {mode === 'login' && (
+                  <Link
+                    to="/forgot-password"
+                    className="text-xs font-medium text-blue-500 hover:text-blue-600 transition-colors"
+                  >
+                    Forgot password?
+                  </Link>
+                )}
+              </div>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}

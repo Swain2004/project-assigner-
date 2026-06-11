@@ -161,6 +161,21 @@ ALTER TABLE template_submissions ADD COLUMN IF NOT EXISTS mime_type VARCHAR(255)
 ALTER TABLE template_submissions ADD COLUMN IF NOT EXISTS file_size BIGINT;
 
 -- =============================================
+-- PASSWORD RESET TOKENS
+-- =============================================
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  token VARCHAR(255) UNIQUE NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  used BOOLEAN DEFAULT false,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_token ON password_reset_tokens(token);
+CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user ON password_reset_tokens(user_id);
+
+-- =============================================
 -- INDEXES
 -- =============================================
 CREATE INDEX IF NOT EXISTS idx_project_members_project ON project_members(project_id);

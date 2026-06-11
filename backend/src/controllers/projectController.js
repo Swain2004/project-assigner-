@@ -1,5 +1,6 @@
 const { query } = require('../config/database');
 const { createNotification, createBulkNotifications, logActivity } = require('../utils/notificationHelper');
+const { sendEmail, buildTeamLeaderEmail, buildAddedToProjectEmail } = require('../config/mailer');
 
 async function isProjectTeamLeader(userId, projectId) {
   const r = await query(
@@ -160,17 +161,6 @@ async function createProject(req, res, next) {
             'INSERT INTO project_members (project_id, user_id, role, added_by) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING',
             [project.id, memberId, 'member', userId]
           );
-
-          await createNotification({
-            userId: memberId,
-            title: 'Added to Project',
-            message: `You have been added to the project "${project.name}"`,
-            type: 'project_assigned',
-            relatedId: project.id,
-            relatedType: 'project',
-            actionUrl: `/projects/${project.id}`,
-            createdBy: userId,
-          });
         }
       }
     }
@@ -180,6 +170,7 @@ async function createProject(req, res, next) {
         'INSERT INTO project_members (project_id, user_id, role, added_by) VALUES ($1, $2, $3, $4) ON CONFLICT (project_id, user_id) DO UPDATE SET role = $3',
         [project.id, team_leader_id, 'team_leader', userId]
       );
+
       await createNotification({
         userId: team_leader_id,
         title: 'You are Team Leader',
@@ -191,6 +182,81 @@ async function createProject(req, res, next) {
         createdBy: userId,
         sendEmailNotification: false,
       });
+
+      const [leaderResult, creatorResult, membersResult] = await Promise.all([
+        query('SELECT name, email FROM users WHERE id = $1', [team_leader_id]),
+        query('SELECT name FROM users WHERE id = $1', [userId]),
+        query(
+          `SELECT u.name FROM project_members pm
+           JOIN users u ON pm.user_id = u.id
+           WHERE pm.project_id = $1 AND pm.user_id != $2`,
+          [project.id, team_leader_id]
+        ),
+      ]);
+
+      if (leaderResult.rows.length > 0) {
+        const leader = leaderResult.rows[0];
+        const assignedByName = creatorResult.rows[0]?.name || null;
+        const memberNames = membersResult.rows.map((r) => r.name);
+        const { html, text } = buildTeamLeaderEmail({
+          recipientName: leader.name,
+          projectName: project.name,
+          projectUrl: `/projects/${project.id}`,
+          memberNames,
+          assignedByName,
+        });
+        sendEmail({
+          to: leader.email,
+          subject: `You are the Team Leader for "${project.name}"`,
+          html,
+          text,
+        }).catch(() => {});
+      }
+    }
+
+    // Send enhanced "Added to Project" emails to all members with team info
+    if (member_ids && member_ids.length > 0) {
+      const [leaderResult, allMembersResult, creatorResult] = await Promise.all([
+        query(`SELECT u.name FROM project_members pm JOIN users u ON pm.user_id = u.id WHERE pm.project_id = $1 AND pm.role = 'team_leader' LIMIT 1`, [project.id]),
+        query(`SELECT u.id, u.name, u.email FROM project_members pm JOIN users u ON pm.user_id = u.id WHERE pm.project_id = $1 AND pm.user_id != $2`, [project.id, userId]),
+        query('SELECT name FROM users WHERE id = $1', [userId]),
+      ]);
+
+      const teamLeaderName = leaderResult.rows[0]?.name || null;
+      const creatorName = creatorResult.rows[0]?.name || 'Admin';
+      const allMemberNames = allMembersResult.rows.map((r) => r.name);
+
+      for (const member of allMembersResult.rows) {
+        // Skip if this is the team leader (already got team leader email)
+        if (team_leader_id && member.id === team_leader_id) continue;
+
+        const { html, text } = buildAddedToProjectEmail({
+          recipientName: member.name,
+          projectName: project.name,
+          projectUrl: `/projects/${project.id}`,
+          teamLeaderName,
+          memberNames: allMemberNames,
+        });
+
+        sendEmail({
+          to: member.email,
+          subject: `Added to Project: "${project.name}"`,
+          html,
+          text,
+        }).catch(() => {});
+
+        await createNotification({
+          userId: member.id,
+          title: 'Added to Project',
+          message: `You have been added to the project "${project.name}"${teamLeaderName ? `. ${teamLeaderName} is your team leader` : ''}`,
+          type: 'project_assigned',
+          relatedId: project.id,
+          relatedType: 'project',
+          actionUrl: `/projects/${project.id}`,
+          createdBy: userId,
+          sendEmailNotification: false, // Email sent above
+        });
+      }
     }
 
     await logActivity({ userId, action: 'created_project', entityType: 'project', entityId: project.id, metadata: { name: project.name } });
@@ -276,15 +342,43 @@ async function addMember(req, res, next) {
       [id, user_id, role || 'member', req.user.id]
     );
 
+    // Fetch team leader and other members for email
+    const [leaderResult, membersResult, addedUserResult] = await Promise.all([
+      query(`SELECT u.name FROM project_members pm JOIN users u ON pm.user_id = u.id WHERE pm.project_id = $1 AND pm.role = 'team_leader' LIMIT 1`, [id]),
+      query(`SELECT u.name FROM project_members pm JOIN users u ON pm.user_id = u.id WHERE pm.project_id = $1 AND pm.user_id != $2`, [id, user_id]),
+      query('SELECT name, email FROM users WHERE id = $1', [user_id]),
+    ]);
+
+    const teamLeaderName = leaderResult.rows[0]?.name || null;
+    const memberNames = membersResult.rows.map((r) => r.name);
+    const addedUser = addedUserResult.rows[0];
+
+    if (addedUser) {
+      const { html, text } = buildAddedToProjectEmail({
+        recipientName: addedUser.name,
+        projectName: projectResult.rows[0].name,
+        projectUrl: `/projects/${id}`,
+        teamLeaderName,
+        memberNames,
+      });
+      sendEmail({
+        to: addedUser.email,
+        subject: `Added to Project: "${projectResult.rows[0].name}"`,
+        html,
+        text,
+      }).catch(() => {});
+    }
+
     await createNotification({
       userId: user_id,
       title: 'Added to Project',
-      message: `You have been added to the project "${projectResult.rows[0].name}"`,
+      message: `You have been added to the project "${projectResult.rows[0].name}"${teamLeaderName ? `. ${teamLeaderName} is your team leader` : ''}`,
       type: 'project_assigned',
       relatedId: id,
       relatedType: 'project',
       actionUrl: `/projects/${id}`,
       createdBy: req.user.id,
+      sendEmailNotification: false, // Email sent above
     });
 
     const memberResult = await query(

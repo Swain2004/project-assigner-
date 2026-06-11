@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Upload, Users, CheckSquare, FileText, Layout, Calendar, MoreVertical, Search, Paperclip, AlertCircle, GripVertical, Crown } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Upload, Users, CheckSquare, FileText, Layout, Calendar, MoreVertical, Search, Paperclip, AlertCircle, GripVertical, Crown, Shield } from 'lucide-react';
 import { format } from 'date-fns';
 import { DndContext, useDraggable, useDroppable, closestCenter } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
@@ -384,6 +384,8 @@ export default function ProjectDetail() {
   const [defaultStatus, setDefaultStatus] = useState('todo');
   const [showUpload, setShowUpload] = useState(false);
   const [showAddMember, setShowAddMember] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const isAdmin = user?.role === 'admin';
   const isTeamLeader = !!project?.members?.some((m) => m.id === user?.id && m.project_role === 'team_leader');
   const isProjectManager = isAdmin || isTeamLeader;
@@ -428,6 +430,18 @@ export default function ProjectDetail() {
     setTasks(newTasks);
     updateCache(newTasks);
   }, [tasks, updateCache]);
+
+  const handleDeleteProject = useCallback(async () => {
+    setDeleting(true);
+    try {
+      await api.delete(`/projects/${id}`);
+      window.location.href = '/projects';
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete project');
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  }, [id]);
 
   const handleDragEnd = useCallback((event) => {
     const { active, over } = event;
@@ -477,6 +491,15 @@ export default function ProjectDetail() {
             <p className="text-2xl font-bold text-gray-900">{pct}%</p>
             <p className="text-xs text-gray-400">Complete</p>
           </div>
+          {isAdmin && (
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
+              title="Delete Project"
+            >
+              <Trash2 size={18} />
+            </button>
+          )}
         </div>
         <div className="mt-4 h-2 bg-gray-100 rounded-full overflow-hidden">
           <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: project.color || '#007AFF' }} />
@@ -636,6 +659,42 @@ export default function ProjectDetail() {
       <CreateTaskModal open={showTask} onClose={() => setShowTask(false)} onCreated={(t) => { const newTasks = [t, ...tasks]; setTasks(newTasks); updateCache(newTasks); }} projectId={id} members={project.members || []} defaultStatus={defaultStatus} />
       <UploadModal open={showUpload} onClose={() => setShowUpload(false)} onUploaded={(d) => setDocuments((p) => [d,...p])} projectId={id} />
       <AddMemberModal open={showAddMember} onClose={() => setShowAddMember(false)} onAdded={(m) => setProject((p) => ({...p, members: [...(p.members||[]), m]}))} projectId={id} existingMemberIds={project?.members?.map((m) => m.id) || []} />
+
+      {/* Delete Project Confirmation Modal */}
+      {showDeleteConfirm && (
+        <Modal isOpen={showDeleteConfirm} onClose={() => !deleting && setShowDeleteConfirm(false)} title="Delete Project">
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 p-3 bg-red-50 rounded-ios">
+              <Shield className="text-red-500 flex-shrink-0" size={20} />
+              <p className="text-sm text-red-700">
+                <span className="font-semibold">Admin only:</span> This will permanently delete the project and all its tasks, documents, and templates. This action cannot be undone.
+              </p>
+            </div>
+            <p className="text-sm text-gray-600">
+              You are about to delete <span className="font-semibold text-gray-900">"{project?.name}"</span>.
+            </p>
+            <p className="text-xs text-gray-400">
+              {tasks.length} tasks, {documents.length} documents, {templates.length} templates will be deleted.
+            </p>
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleting}
+                className="btn-secondary flex-1"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteProject}
+                disabled={deleting}
+                className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-red-500 text-white text-[15px] font-semibold rounded-full transition-all duration-300 hover:bg-red-600 hover:shadow-[0_8px_20px_rgba(255,59,48,0.3)] disabled:opacity-50"
+              >
+                {deleting ? 'Deleting...' : 'Delete Project'}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

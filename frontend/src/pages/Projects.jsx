@@ -324,7 +324,16 @@ export default function Projects() {
 
   const filtered = projects.filter((p) => {
     const matchSearch = !search || p.name.toLowerCase().includes(search.toLowerCase());
-    const matchFilter = filter === 'all' || p.status === filter;
+    const total = parseInt(p.task_count) || 0;
+    const done = parseInt(p.completed_tasks) || 0;
+    const isTaskComplete = total > 0 && done === total;
+
+    let matchFilter = true;
+    if (filter === 'completed') {
+      matchFilter = p.status === 'completed' || isTaskComplete;
+    } else if (filter !== 'all') {
+      matchFilter = p.status === filter;
+    }
     return matchSearch && matchFilter;
   });
 

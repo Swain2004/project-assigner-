@@ -1,8 +1,18 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const router = express.Router();
-const { register, login, getMe, updateProfile, changePassword } = require('../controllers/authController');
+const { register, login, getMe, updateProfile, changePassword, forgotPassword, resetPassword } = require('../controllers/authController');
 const { authenticate } = require('../middleware/auth');
+
+const ALLOWED_DOMAIN = 'aitechtures.com';
+
+const validateEmailDomain = (value) => {
+  const email = value.toLowerCase().trim();
+  if (!email.endsWith(`@${ALLOWED_DOMAIN}`)) {
+    throw new Error(`Only @${ALLOWED_DOMAIN} email addresses are allowed`);
+  }
+  return true;
+};
 
 const validate = (req, res, next) => {
   const errors = validationResult(req);
@@ -16,7 +26,7 @@ router.post(
   '/register',
   [
     body('name').trim().notEmpty().withMessage('Name is required').isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
-    body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
+    body('email').isEmail().withMessage('Valid email is required').normalizeEmail().custom(validateEmailDomain),
     body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
   ],
   validate,
@@ -26,11 +36,30 @@ router.post(
 router.post(
   '/login',
   [
-    body('email').isEmail().withMessage('Valid email is required'),
+    body('email').isEmail().withMessage('Valid email is required').custom(validateEmailDomain),
     body('password').notEmpty().withMessage('Password is required'),
   ],
   validate,
   login
+);
+
+router.post(
+  '/forgot-password',
+  [
+    body('email').isEmail().withMessage('Valid email is required').normalizeEmail().custom(validateEmailDomain),
+  ],
+  validate,
+  forgotPassword
+);
+
+router.post(
+  '/reset-password',
+  [
+    body('token').notEmpty().withMessage('Token is required'),
+    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  ],
+  validate,
+  resetPassword
 );
 
 router.get('/me', authenticate, getMe);
