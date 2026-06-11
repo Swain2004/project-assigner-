@@ -122,7 +122,7 @@ function UploadTemplateModal({ open, onClose, onCreated }) {
   );
 }
 
-function UseTemplateModal({ open, onClose, template, onSubmitted }) {
+function UseTemplateModal({ open, onClose, template, onSubmitted, onDownload }) {
   const [file, setFile] = useState(null);
   const [title, setTitle] = useState('');
   const [note, setNote] = useState('');
@@ -172,15 +172,12 @@ function UseTemplateModal({ open, onClose, template, onSubmitted }) {
             <li>Fill it in with your information</li>
             <li>Upload the completed file here</li>
           </ol>
-          <a
-            href={template?.file_url}
-            download
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            onClick={() => onDownload(template)}
             className="inline-flex items-center gap-2 mt-3 px-4 py-2 bg-blue-500 text-white text-sm font-semibold rounded-ios hover:bg-blue-600 transition-colors"
           >
             <Download size={14} /> Download Template
-          </a>
+          </button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -235,6 +232,26 @@ export default function Templates() {
     ));
   }
 
+  async function handleDownload(template) {
+    if (!template?.id) return;
+    try {
+      const response = await api.get(`/templates/${template.id}/download`, {
+        responseType: 'blob'
+      });
+      const blob = new Blob([response.data], { type: template.mime_type || 'application/octet-stream' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = template.original_name || 'template';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('Failed to download template. Please try again.');
+    }
+  }
+
   return (
     <div className="space-y-5 max-w-6xl mx-auto animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 items-start">
@@ -274,10 +291,10 @@ export default function Templates() {
                   </div>
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
                     {t.file_url && (
-                      <a href={t.file_url} download target="_blank" rel="noopener noreferrer"
+                      <button onClick={() => handleDownload(t)}
                         className="p-1.5 text-gray-300 hover:text-blue-500 rounded transition-colors" title="Download template">
                         <Download size={14} />
-                      </a>
+                      </button>
                     )}
                     {(t.created_by === user?.id || isAdmin) && (
                       <button onClick={() => handleDelete(t.id)} className="p-1.5 text-gray-300 hover:text-red-500 rounded transition-colors" title="Delete">
@@ -306,10 +323,10 @@ export default function Templates() {
                   </div>
                   <div className="flex gap-2">
                     {t.file_url && (
-                      <a href={t.file_url} download target="_blank" rel="noopener noreferrer"
+                      <button onClick={() => handleDownload(t)}
                         className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-semibold text-gray-600 bg-gray-50 border border-gray-200 rounded-ios hover:bg-gray-100 transition-colors">
                         <Download size={13} /> Download
-                      </a>
+                      </button>
                     )}
                     <button onClick={() => setUseTarget(t)} className="flex-1 btn-primary text-sm py-2">
                       <Send size={13} /> Use Template
@@ -323,7 +340,7 @@ export default function Templates() {
       )}
 
       <UploadTemplateModal open={showUpload} onClose={() => setShowUpload(false)} onCreated={(t) => { setTemplates((p) => [t, ...p]); setCached('/templates', [t, ...templates]); }} />
-      {useTarget && <UseTemplateModal open={!!useTarget} onClose={() => setUseTarget(null)} template={useTarget} onSubmitted={handleSubmitted} />}
+      {useTarget && <UseTemplateModal open={!!useTarget} onClose={() => setUseTarget(null)} template={useTarget} onSubmitted={handleSubmitted} onDownload={handleDownload} />}
     </div>
   );
 }

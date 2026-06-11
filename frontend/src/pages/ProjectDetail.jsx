@@ -2,8 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2, Upload, Users, CheckSquare, FileText, Layout, Calendar, MoreVertical, Search, Paperclip, AlertCircle, GripVertical, Crown, Shield } from 'lucide-react';
 import { format } from 'date-fns';
-import { DndContext, useDraggable, useDroppable, closestCenter } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
+import { DndContext, useDraggable, useDroppable, closestCenter, MeasuringStrategy, DragOverlay } from '@dnd-kit/core';
 import Modal from '../components/Modal';
 import { getCached, setCached } from '../api/cache';
 import AppleSelect from '../components/AppleSelect';
@@ -36,20 +35,15 @@ function TaskCard({ task, onUpdate, onDelete }) {
     return () => document.removeEventListener('mousedown', handleClose);
   }, [menu]);
 
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: task.id,
     data: { task },
   });
 
-  const style = transform ? {
-    transform: CSS.Translate.toString(transform),
-  } : undefined;
-
   return (
     <div
       ref={setNodeRef}
-      style={style}
-      className={`bg-white border border-gray-150 rounded-ios p-3.5 shadow-apple-sm group hover:shadow-apple transition-shadow ${isDragging ? 'opacity-50 rotate-2 scale-105 shadow-apple-md z-50' : ''}`}
+      className={`bg-white border border-gray-150 rounded-ios p-3.5 shadow-apple-sm group hover:shadow-apple transition-shadow w-full ${isDragging ? 'opacity-30' : ''}`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-start gap-1.5 flex-1">
@@ -117,7 +111,7 @@ function TaskColumn({ status, tasks, onUpdate, onDelete, children }) {
   });
 
   return (
-    <div className="flex-1 min-w-[240px] max-w-[300px]">
+    <div className="w-[280px] flex-shrink-0">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full" style={{ background: status.color }} />
@@ -386,6 +380,7 @@ export default function ProjectDetail() {
   const [showAddMember, setShowAddMember] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [activeDrag, setActiveDrag] = useState(null);
   const isAdmin = user?.role === 'admin';
   const isTeamLeader = !!project?.members?.some((m) => m.id === user?.id && m.project_role === 'team_leader');
   const isProjectManager = isAdmin || isTeamLeader;
@@ -443,8 +438,14 @@ export default function ProjectDetail() {
     }
   }, [id]);
 
+  const handleDragStart = useCallback((event) => {
+    const task = tasks.find((t) => t.id === event.active.id);
+    setActiveDrag(task || null);
+  }, [tasks]);
+
   const handleDragEnd = useCallback((event) => {
     const { active, over } = event;
+    setActiveDrag(null);
     if (!over) return;
 
     const taskId = active.id;
@@ -531,8 +532,17 @@ export default function ProjectDetail() {
               </button>
             )}
           </div>
-          <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <div className="flex gap-4 overflow-x-auto pb-4" data-lenis-prevent>
+          <DndContext
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            measuring={{
+              droppable: {
+                strategy: MeasuringStrategy.Always,
+              },
+            }}
+          >
+            <div className="flex gap-4 overflow-x-auto pb-4 items-start max-w-full" data-lenis-prevent style={{ minHeight: '200px' }}>
               {STATUSES.map((s) => (
                 <TaskColumn key={s.key} status={s} tasks={tasksByStatus[s.key] || []} onUpdate={handleTaskUpdate} onDelete={handleTaskDelete}>
                   <button onClick={() => { setDefaultStatus(s.key); setShowTask(true); }} className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-blue-500 hover:bg-blue-50 rounded-md transition-all">
@@ -541,6 +551,16 @@ export default function ProjectDetail() {
                 </TaskColumn>
               ))}
             </div>
+            <DragOverlay dropAnimation={null} style={{ position: 'fixed', pointerEvents: 'none', zIndex: 9999 }}>
+              {activeDrag ? (
+                <div className="bg-white border border-gray-150 rounded-ios p-3.5 shadow-apple-md w-[280px] rotate-1 scale-[1.02] opacity-90 pointer-events-auto">
+                  <div className="flex items-start gap-1.5">
+                    <GripVertical size={14} className="text-gray-300 mt-0.5" />
+                    <p className="text-sm font-semibold text-gray-800 truncate">{activeDrag.title}</p>
+                  </div>
+                </div>
+              ) : null}
+            </DragOverlay>
           </DndContext>
         </div>
       )}

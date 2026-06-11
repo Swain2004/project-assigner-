@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../middleware/auth');
 const { upload } = require('../middleware/upload');
-const { getTemplates, createTemplate, deleteTemplate, submitTemplate, getSubmissions, deleteSubmission } = require('../controllers/templateController');
+const { getTemplates, createTemplate, deleteTemplate, submitTemplate, getSubmissions, deleteSubmission, downloadTemplate } = require('../controllers/templateController');
 
 router.use(authenticate);
 
@@ -12,5 +12,6 @@ router.post('/', upload.single('file'), createTemplate);
 router.delete('/:id', deleteTemplate);
 router.post('/:id/submit', upload.single('file'), submitTemplate);
 router.delete('/submissions/:id', deleteSubmission);
+router.get('/:id/download', downloadTemplate);
 
 module.exports = router;

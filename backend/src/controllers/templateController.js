@@ -192,4 +192,49 @@ async function deleteSubmission(req, res, next) {
   }
 }
 
-module.exports = { getTemplates, createTemplate, deleteTemplate, submitTemplate, getSubmissions, deleteSubmission };
+async function downloadTemplate(req, res, next) {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    const result = await query(
+      `SELECT t.*, p.id as project_id FROM templates t
+       LEFT JOIN projects p ON t.project_id = p.id
+       WHERE t.id = $1`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Template not found' });
+    }
+
+    const template = result.rows[0];
+
+    if (!template.file_url) {
+      return res.status(404).json({ message: 'No file attached to this template' });
+    }
+
+    const filePath = require('path').join(__dirname, '../../uploads', require('path').basename(template.file_url));
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: 'File not found on server' });
+    }
+
+    const mimeType = template.mime_type || 'application/octet-stream';
+    const originalName = template.original_name || 'template';
+
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Content-Disposition', `attachment; filename="${originalName}"`);
+    res.setHeader('Content-Length', fs.statSync(filePath).size);
+    res.setHeader('Cache-Control', 'private, no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = { getTemplates, createTemplate, deleteTemplate, submitTemplate, getSubmissions, deleteSubmission, downloadTemplate };

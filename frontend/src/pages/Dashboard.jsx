@@ -53,11 +53,10 @@ const CARD_STYLES = {
   },
 };
 
-function StatCard({ icon: Icon, label, value, color, sublabel }) {
+function StatCard({ icon: Icon, label, value, color, sublabel, to }) {
   const style = CARD_STYLES[color] || CARD_STYLES.blue;
-
-  return (
-    <div className={`relative overflow-hidden rounded-2xl p-5 sm:p-6 bg-gradient-to-br ${style.bg} border border-gray-100/50 cursor-pointer group transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:border-gray-200`}>
+  const cardContent = (
+    <>
       {/* Background decoration */}
       <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/40 rounded-full blur-2xl group-hover:bg-white/60 transition-colors duration-300" />
 
@@ -65,7 +64,7 @@ function StatCard({ icon: Icon, label, value, color, sublabel }) {
         {/* Icon and label row */}
         <div className="flex items-start justify-between mb-3">
           <span className="text-[11px] sm:text-xs font-semibold text-gray-500 tracking-wide">{label}</span>
-          <div className={`w-9 h-9 rounded-xl ${style.iconBg} flex items-center justify-center shadow-lg shadow-${color}-500/25 group-hover:scale-110 transition-transform duration-300`}>
+          <div className={`w-9 h-9 rounded-xl ${style.iconBg} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
             <Icon className={style.iconColor} size={18} strokeWidth={2} />
           </div>
         </div>
@@ -80,6 +79,20 @@ function StatCard({ icon: Icon, label, value, color, sublabel }) {
           )}
         </div>
       </div>
+    </>
+  );
+
+  if (to) {
+    return (
+      <Link to={to} className={`relative overflow-hidden rounded-2xl p-5 sm:p-6 bg-gradient-to-br ${style.bg} border border-gray-100/50 cursor-pointer group transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:border-gray-200 block`}>
+        {cardContent}
+      </Link>
+    );
+  }
+
+  return (
+    <div className={`relative overflow-hidden rounded-2xl p-5 sm:p-6 bg-gradient-to-br ${style.bg} border border-gray-100/50 cursor-pointer group transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:border-gray-200`}>
+      {cardContent}
     </div>
   );
 }
@@ -211,8 +224,8 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <StatCard icon={FolderKanban} label="Active Projects" value={stats?.active_projects ?? 0} color="blue" />
-        <StatCard icon={CheckSquare} label="My Tasks" value={stats?.my_tasks ?? 0} color="orange" sublabel="Pending" />
+        <StatCard icon={FolderKanban} label="Active Projects" value={stats?.active_projects ?? 0} color="blue" to="/projects" />
+        <StatCard icon={CheckSquare} label="My Tasks" value={stats?.my_tasks ?? 0} color="orange" sublabel="Pending" to="/tasks" />
         <StatCard icon={TrendingUp} label="Completed" value={stats?.completed_tasks ?? 0} color="green" sublabel="Tasks done" />
         {user?.role === 'admin' ? (
           <StatCard icon={Users} label="Team Members" value={stats?.team_members ?? 0} color="purple" />
@@ -263,11 +276,11 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="card shadow-apple-sm border-0 ring-1 ring-gray-100 overflow-hidden h-full">
+        <div className="card shadow-apple-sm border-0 ring-1 ring-gray-100 overflow-hidden">
           <div className="px-6 py-5 border-b border-gray-100/80 bg-gray-50/50">
             <h3 className="text-[17px] font-bold text-gray-900 tracking-tight">Recent Activity</h3>
           </div>
-          <div className="p-2 overflow-y-auto max-h-[460px]" data-lenis-prevent>
+          <div className="p-2 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 320px)' }} data-lenis-prevent>
             {activity.length === 0 ? (
               <div className="flex flex-col items-center py-8 text-center">
                 <TrendingUp size={28} className="text-gray-200 mb-2" strokeWidth={1.5} />
