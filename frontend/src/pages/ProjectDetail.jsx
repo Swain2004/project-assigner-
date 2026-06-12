@@ -57,11 +57,19 @@ function TaskCard({ task, onUpdate, onDelete, isAdmin }) {
               e.stopPropagation();
               if (!menu && menuBtnRef.current) {
                 const r = menuBtnRef.current.getBoundingClientRect();
-                setMenuPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
+                const menuHeight = 220; // approximate height of the menu
+                const spaceBelow = window.innerHeight - r.bottom;
+                const rightOffset = Math.max(4, window.innerWidth - r.right);
+                if (spaceBelow < menuHeight) {
+                  // Not enough space below → open upward
+                  setMenuPos({ bottom: window.innerHeight - r.top + 4, right: rightOffset, top: undefined });
+                } else {
+                  setMenuPos({ top: r.bottom + 4, right: rightOffset, bottom: undefined });
+                }
               }
               setMenu((m) => !m);
             }}
-            className="p-1 rounded text-gray-300 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-all"
+            className="p-1 rounded text-gray-400 hover:text-gray-600 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all"
           >
             <MoreVertical size={14} />
           </button>
@@ -70,17 +78,17 @@ function TaskCard({ task, onUpdate, onDelete, isAdmin }) {
               ref={menuRef}
               onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => e.stopPropagation()}
-              style={{ position: 'fixed', zIndex: 9999, top: menuPos.top, right: menuPos.right }}
-              className="w-40 bg-white/90 backdrop-blur-xl border border-gray-100 rounded-[14px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden py-1"
+              style={{ position: 'fixed', zIndex: 9999, top: menuPos.top, bottom: menuPos.bottom, right: menuPos.right }}
+              className="w-44 bg-white/95 backdrop-blur-xl border border-gray-100 rounded-[14px] shadow-[0_8px_30px_rgb(0,0,0,0.15)] overflow-hidden py-1"
             >
               {STATUSES.map((s) => (
                 <button key={s.key} onClick={(e) => { e.stopPropagation(); onUpdate(task.id, { status: s.key }); setMenu(false); }}
-                  className={`w-full text-left px-3.5 py-2 text-xs font-medium hover:bg-gray-100/50 transition-colors ${task.status === s.key ? 'text-blue-500' : 'text-gray-700'}`}>
+                  className={`w-full text-left px-3.5 py-2.5 text-sm font-medium hover:bg-gray-100/50 transition-colors ${task.status === s.key ? 'text-blue-500' : 'text-gray-700'}`}>
                   {s.label}
                 </button>
               ))}
               <div className="border-t border-gray-100/60 my-1" />
-              <button onClick={(e) => { e.stopPropagation(); onDelete(task.id); setMenu(false); }} className="w-full text-left px-3.5 py-2 text-xs font-medium text-red-500 hover:bg-red-50 transition-colors">Delete</button>
+              <button onClick={(e) => { e.stopPropagation(); onDelete(task.id); setMenu(false); }} className="w-full text-left px-3.5 py-2.5 text-sm font-medium text-red-500 hover:bg-red-50 transition-colors">Delete</button>
             </div>
           )}
         </div>
@@ -113,7 +121,7 @@ function TaskColumn({ status, tasks, onUpdate, onDelete, children, isAdmin }) {
   });
 
   return (
-    <div className="w-[260px] sm:w-[280px] flex-shrink-0">
+    <div className="w-[85vw] sm:w-[260px] lg:w-[280px] flex-shrink-0 snap-center">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full" style={{ background: status.color }} />
@@ -565,7 +573,7 @@ export default function ProjectDetail() {
               },
             }}
           >
-            <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 items-start max-w-full snap-x snap-mandatory" data-lenis-prevent style={{ minHeight: '200px', WebkitOverflowScrolling: 'touch' }}>
+            <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 items-start max-w-full snap-x snap-mandatory" data-lenis-prevent style={{ minHeight: '200px', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               {STATUSES.map((s) => (
                 <TaskColumn key={s.key} status={s} tasks={tasksByStatus[s.key] || []} onUpdate={handleTaskUpdate} onDelete={handleTaskDelete} isAdmin={isAdmin}>
                   <button onClick={() => { setDefaultStatus(s.key); setShowTask(true); }} className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-blue-500 hover:bg-blue-50 rounded-md transition-all">

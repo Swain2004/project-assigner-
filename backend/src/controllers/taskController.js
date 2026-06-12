@@ -307,6 +307,37 @@ async function updateTask(req, res, next) {
     }
     await logActivity({ userId, action: 'updated_task', entityType: 'task', entityId: id, metadata: { status, priority } });
 
+    // Auto-complete the project if ALL tasks are now done
+    if (status === 'done') {
+      const remainingTasks = await query(
+        `SELECT COUNT(*) FROM tasks WHERE project_id = $1 AND status != 'done'`,
+        [task.project_id]
+      );
+      const pendingCount = parseInt(remainingTasks.rows[0].count);
+      const totalTasks = await query(
+        `SELECT COUNT(*) FROM tasks WHERE project_id = $1`,
+        [task.project_id]
+      );
+      const total = parseInt(totalTasks.rows[0].count);
+
+      if (total > 0 && pendingCount === 0) {
+        // All tasks are done — mark project as completed
+        await query(
+          `UPDATE projects SET status = 'completed', updated_at = NOW() WHERE id = $1 AND status = 'active'`,
+          [task.project_id]
+        );
+        await logActivity({ userId, action: 'completed_project', entityType: 'project', entityId: task.project_id, metadata: { auto: true } });
+      }
+    }
+
+    // If a task is re-opened from done, revert project back to active if it was auto-completed
+    if (prev.status === 'done' && status && status !== 'done') {
+      await query(
+        `UPDATE projects SET status = 'active', updated_at = NOW() WHERE id = $1 AND status = 'completed'`,
+        [task.project_id]
+      );
+    }
+
     const fullTask = await query(
       `SELECT t.*, p.name as project_name, p.color as project_color,
         au.name as assignee_name, au.avatar_url as assignee_avatar,

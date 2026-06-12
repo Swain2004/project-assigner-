@@ -324,14 +324,14 @@ export default function Projects() {
 
   const filtered = projects.filter((p) => {
     const matchSearch = !search || p.name.toLowerCase().includes(search.toLowerCase());
-    const total = parseInt(p.task_count) || 0;
-    const done = parseInt(p.completed_tasks) || 0;
-    const isTaskComplete = total > 0 && done === total;
 
     let matchFilter = true;
-    if (filter === 'completed') {
-      matchFilter = p.status === 'completed' || isTaskComplete;
-    } else if (filter !== 'all') {
+    if (filter === 'all') {
+      // "All" only shows active and on_hold — not completed or archived
+      matchFilter = p.status === 'active' || p.status === 'on_hold';
+    } else if (filter === 'completed') {
+      matchFilter = p.status === 'completed';
+    } else {
       matchFilter = p.status === filter;
     }
     return matchSearch && matchFilter;

@@ -11,69 +11,83 @@ const STATUS_STYLE = { todo:'bg-gray-100 text-gray-600', in_progress:'bg-blue-10
 const PRIORITY_STYLE = { low:'priority-low', medium:'priority-medium', high:'priority-high', urgent:'priority-urgent' };
 const STATUS_LABELS = { todo:'To Do', in_progress:'In Progress', review:'In Review', done:'Done' };
 
-function TaskRow({ task, onStatusChange, isAdmin }) {
+function TaskRow({ task, onStatusChange }) {
   const overdue = task.due_date && !['done'].includes(task.status) && isPast(new Date(task.due_date));
   return (
-    <div
-      className="hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0 last:rounded-b-[24px] group px-4 py-3"
-      style={{
-        display: 'grid',
-        gridTemplateColumns: '24px 1fr 130px 70px 75px minmax(80px, 120px)',
-        gap: '10px',
-        alignItems: 'center',
-      }}
-    >
-      {/* 1. Checkbox */}
-      <button
-        onClick={() => onStatusChange(task.id, task.status === 'done' ? 'todo' : 'done')}
-        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${task.status === 'done' ? 'bg-green-500 border-green-500' : 'border-gray-300 hover:border-blue-500'}`}
+    <div className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors group">
+      {/* ── Mobile layout (< sm) ── */}
+      <div className="flex items-start gap-3 px-4 py-3 sm:hidden">
+        <button
+          onClick={() => onStatusChange(task.id, task.status === 'done' ? 'todo' : 'done')}
+          className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${task.status === 'done' ? 'bg-green-500 border-green-500' : 'border-gray-300 hover:border-blue-500'}`}
+        >
+          {task.status === 'done' && <svg width="10" height="10" viewBox="0 0 10 10"><path d="M1.5 5L3.8 7.5L8.5 2.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>}
+        </button>
+        <div className="flex-1 min-w-0">
+          <p className={`text-sm font-semibold leading-snug ${task.status === 'done' ? 'line-through text-gray-400' : 'text-gray-800'}`}>{task.title}</p>
+          {task.project_name && (
+            <Link to={`/projects/${task.project_id}`} className="text-[11px] text-blue-500 font-medium">{task.project_name}</Link>
+          )}
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
+            <AppleSelect
+              value={task.status}
+              onChange={(e) => onStatusChange(task.id, e.target.value)}
+              options={Object.entries(STATUS_LABELS).map(([k, v]) => ({ value: k, label: v }))}
+            />
+            <span className={`badge capitalize text-[11px] ${PRIORITY_STYLE[task.priority]}`}>{task.priority}</span>
+            {task.due_date && (
+              <span className={`text-[11px] flex items-center gap-1 ${overdue ? 'text-red-500 font-semibold' : 'text-gray-400'}`}>
+                <Calendar size={10} />{format(new Date(task.due_date), 'MMM d')}
+              </span>
+            )}
+            {task.assignee_name && (
+              <span className="flex items-center gap-1">
+                <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-[9px] font-bold text-white">{task.assignee_name.charAt(0)}</span>
+                </div>
+                <span className="text-[11px] text-gray-500">{task.assignee_name}</span>
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Desktop layout (sm+) ── */}
+      <div
+        className="hidden sm:grid px-4 py-3"
+        style={{ gridTemplateColumns: '24px 1fr 130px 70px 75px minmax(80px, 120px)', gap: '10px', alignItems: 'center' }}
       >
-        {task.status === 'done' && <svg width="10" height="10" viewBox="0 0 10 10"><path d="M1.5 5L3.8 7.5L8.5 2.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>}
-      </button>
-
-      {/* 2. Title + project */}
-      <div className="min-w-0">
-        <p className={`text-sm font-semibold leading-snug truncate ${task.status === 'done' ? 'line-through text-gray-400' : 'text-gray-800'}`}>
-          {task.title}
-        </p>
-        {task.project_name && (
-          <Link to={`/projects/${task.project_id}`} className="text-[11px] text-blue-500 hover:text-blue-600 font-medium truncate block mt-0.5">{task.project_name}</Link>
-        )}
-      </div>
-
-      {/* 3. Status */}
-      <AppleSelect
-        value={task.status}
-        onChange={(e) => onStatusChange(task.id, e.target.value)}
-        options={Object.entries(STATUS_LABELS).map(([k, v]) => ({ value: k, label: v }))}
-      />
-
-      {/* 4. Priority */}
-      <span className={`badge capitalize text-[11px] text-center ${PRIORITY_STYLE[task.priority]}`}>{task.priority}</span>
-
-      {/* 5. Due date */}
-      <div>
-        {task.due_date ? (
-          <span className={`text-xs flex items-center gap-1 whitespace-nowrap ${overdue ? 'text-red-500 font-semibold' : 'text-gray-400'}`}>
-            <Calendar size={11} />{format(new Date(task.due_date), 'MMM d')}
-          </span>
-        ) : (
-          <span className="text-xs text-gray-200">—</span>
-        )}
-      </div>
-
-      {/* 6. Assignee */}
-      <div className="flex items-center gap-1.5 min-w-0">
-        {task.assignee_name ? (
-          <>
-            <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0" title={task.assignee_name}>
-              <span className="text-[10px] font-bold text-white">{task.assignee_name.charAt(0)}</span>
-            </div>
-            <span className="text-xs font-medium text-gray-600 truncate">{task.assignee_name}</span>
-          </>
-        ) : (
-          <span className="text-xs text-gray-300">Unassigned</span>
-        )}
+        <button
+          onClick={() => onStatusChange(task.id, task.status === 'done' ? 'todo' : 'done')}
+          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${task.status === 'done' ? 'bg-green-500 border-green-500' : 'border-gray-300 hover:border-blue-500'}`}
+        >
+          {task.status === 'done' && <svg width="10" height="10" viewBox="0 0 10 10"><path d="M1.5 5L3.8 7.5L8.5 2.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>}
+        </button>
+        <div className="min-w-0">
+          <p className={`text-sm font-semibold leading-snug truncate ${task.status === 'done' ? 'line-through text-gray-400' : 'text-gray-800'}`}>{task.title}</p>
+          {task.project_name && (
+            <Link to={`/projects/${task.project_id}`} className="text-[11px] text-blue-500 hover:text-blue-600 font-medium truncate block mt-0.5">{task.project_name}</Link>
+          )}
+        </div>
+        <AppleSelect value={task.status} onChange={(e) => onStatusChange(task.id, e.target.value)} options={Object.entries(STATUS_LABELS).map(([k, v]) => ({ value: k, label: v }))} />
+        <span className={`badge capitalize text-[11px] text-center ${PRIORITY_STYLE[task.priority]}`}>{task.priority}</span>
+        <div>
+          {task.due_date ? (
+            <span className={`text-xs flex items-center gap-1 whitespace-nowrap ${overdue ? 'text-red-500 font-semibold' : 'text-gray-400'}`}>
+              <Calendar size={11} />{format(new Date(task.due_date), 'MMM d')}
+            </span>
+          ) : <span className="text-xs text-gray-200">—</span>}
+        </div>
+        <div className="flex items-center gap-1.5 min-w-0">
+          {task.assignee_name ? (
+            <>
+              <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0" title={task.assignee_name}>
+                <span className="text-[10px] font-bold text-white">{task.assignee_name.charAt(0)}</span>
+              </div>
+              <span className="text-xs font-medium text-gray-600 truncate">{task.assignee_name}</span>
+            </>
+          ) : <span className="text-xs text-gray-300">Unassigned</span>}
+        </div>
       </div>
     </div>
   );
@@ -182,17 +196,24 @@ export default function Tasks() {
             const statusTasks = grouped[status] || [];
             if (statusTasks.length === 0) return null;
             return (
-              <div key={status} className="card overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
-                <div style={{ minWidth: 600 }}>
+              <div key={status} className="card overflow-hidden">
                 <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 bg-gray-50/50 rounded-t-[24px]">
                   <span className={`badge ${STATUS_STYLE[status]} capitalize`}>{STATUS_LABELS[status]}</span>
                   <span className="text-xs text-gray-400 font-medium">{statusTasks.length}</span>
                 </div>
-                <div className="flex flex-col">
-                  {statusTasks.map((t) => (
-                    <TaskRow key={t.id} task={t} onStatusChange={handleStatusChange} isAdmin={isAdmin} />
-                  ))}
+                {/* Desktop: needs horizontal scroll for the wide grid */}
+                <div className="hidden sm:block overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+                  <div style={{ minWidth: 580 }}>
+                    {statusTasks.map((t) => (
+                      <TaskRow key={t.id} task={t} onStatusChange={handleStatusChange} />
+                    ))}
+                  </div>
                 </div>
+                {/* Mobile: no horizontal scroll, uses card layout */}
+                <div className="sm:hidden flex flex-col">
+                  {statusTasks.map((t) => (
+                    <TaskRow key={t.id} task={t} onStatusChange={handleStatusChange} />
+                  ))}
                 </div>
               </div>
             );
