@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2, Upload, Users, CheckSquare, FileText, Layout, Calendar, MoreVertical, Search, Paperclip, AlertCircle, GripVertical, Crown, Shield } from 'lucide-react';
 import { format } from 'date-fns';
@@ -57,15 +58,19 @@ function TaskCard({ task, onUpdate, onDelete, isAdmin }) {
               e.stopPropagation();
               if (!menu && menuBtnRef.current) {
                 const r = menuBtnRef.current.getBoundingClientRect();
-                const menuHeight = 220; // approximate height of the menu
-                const spaceBelow = window.innerHeight - r.bottom;
+                const MENU_HEIGHT = 230;
+                // Use visualViewport for iOS Safari accuracy
+                const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+                const vvOffsetTop = window.visualViewport ? window.visualViewport.offsetTop : 0;
+                const spaceBelow = vh - (r.bottom - vvOffsetTop);
                 const rightOffset = Math.max(4, window.innerWidth - r.right);
-                if (spaceBelow < menuHeight) {
-                  // Not enough space below → open upward
-                  setMenuPos({ bottom: window.innerHeight - r.top + 4, right: rightOffset, top: undefined });
+                let topPos;
+                if (spaceBelow < MENU_HEIGHT) {
+                  topPos = Math.max(8, r.top - MENU_HEIGHT - 4);
                 } else {
-                  setMenuPos({ top: r.bottom + 4, right: rightOffset, bottom: undefined });
+                  topPos = r.bottom + 4;
                 }
+                setMenuPos({ top: topPos, right: rightOffset });
               }
               setMenu((m) => !m);
             }}
@@ -73,23 +78,24 @@ function TaskCard({ task, onUpdate, onDelete, isAdmin }) {
           >
             <MoreVertical size={14} />
           </button>
-          {menu && (
+          {menu && createPortal(
             <div
               ref={menuRef}
               onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => e.stopPropagation()}
-              style={{ position: 'fixed', zIndex: 9999, top: menuPos.top, bottom: menuPos.bottom, right: menuPos.right }}
-              className="w-44 bg-white/95 backdrop-blur-xl border border-gray-100 rounded-[14px] shadow-[0_8px_30px_rgb(0,0,0,0.15)] overflow-hidden py-1"
+              style={{ position: 'fixed', zIndex: 99999, top: menuPos.top, right: menuPos.right }}
+              className="w-44 bg-white border border-gray-200 rounded-[14px] shadow-[0_12px_40px_rgba(0,0,0,0.18)] overflow-hidden py-1"
             >
               {STATUSES.map((s) => (
                 <button key={s.key} onClick={(e) => { e.stopPropagation(); onUpdate(task.id, { status: s.key }); setMenu(false); }}
-                  className={`w-full text-left px-3.5 py-2.5 text-sm font-medium hover:bg-gray-100/50 transition-colors ${task.status === s.key ? 'text-blue-500' : 'text-gray-700'}`}>
+                  className={`w-full text-left px-4 py-3 text-sm font-medium hover:bg-gray-50 transition-colors ${task.status === s.key ? 'text-blue-500' : 'text-gray-700'}`}>
                   {s.label}
                 </button>
               ))}
-              <div className="border-t border-gray-100/60 my-1" />
-              <button onClick={(e) => { e.stopPropagation(); onDelete(task.id); setMenu(false); }} className="w-full text-left px-3.5 py-2.5 text-sm font-medium text-red-500 hover:bg-red-50 transition-colors">Delete</button>
-            </div>
+              <div className="border-t border-gray-100 my-1" />
+              <button onClick={(e) => { e.stopPropagation(); onDelete(task.id); setMenu(false); }} className="w-full text-left px-4 py-3 text-sm font-medium text-red-500 hover:bg-red-50 transition-colors">Delete</button>
+            </div>,
+            document.body
           )}
         </div>
       </div>
