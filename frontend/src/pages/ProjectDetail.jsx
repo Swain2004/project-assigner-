@@ -18,7 +18,7 @@ const STATUSES = [
 ];
 const PRIORITY_STYLE = { low: 'priority-low', medium: 'priority-medium', high: 'priority-high', urgent: 'priority-urgent' };
 
-function TaskCard({ task, onUpdate, onDelete }) {
+function TaskCard({ task, onUpdate, onDelete, isAdmin }) {
   const [menu, setMenu] = useState(false);
   const [menuPos, setMenuPos] = useState({});
   const menuBtnRef = useRef(null);
@@ -94,8 +94,13 @@ function TaskCard({ task, onUpdate, onDelete }) {
         <div className="flex items-center gap-2">
           {task.due_date && <span className="text-[11px] text-gray-400">{format(new Date(task.due_date), 'MMM d')}</span>}
           {task.assignee_name && (
-            <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center" title={task.assignee_name}>
-              <span className="text-[9px] font-bold text-white">{task.assignee_name.charAt(0)}</span>
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0" title={task.assignee_name}>
+                <span className="text-[9px] font-bold text-white">{task.assignee_name.charAt(0)}</span>
+              </div>
+              {isAdmin && (
+                <span className="text-[10px] font-medium text-gray-500 truncate max-w-[80px]">{task.assignee_name}</span>
+              )}
             </div>
           )}
         </div>
@@ -104,14 +109,14 @@ function TaskCard({ task, onUpdate, onDelete }) {
   );
 }
 
-function TaskColumn({ status, tasks, onUpdate, onDelete, children }) {
+function TaskColumn({ status, tasks, onUpdate, onDelete, children, isAdmin }) {
   const { setNodeRef, isOver } = useDroppable({
     id: status.key,
     data: { status },
   });
 
   return (
-    <div className="w-[280px] flex-shrink-0">
+    <div className="w-[260px] sm:w-[280px] flex-shrink-0">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full" style={{ background: status.color }} />
@@ -125,7 +130,7 @@ function TaskColumn({ status, tasks, onUpdate, onDelete, children }) {
         className={`space-y-2.5 min-h-[80px] rounded-ios transition-colors ${isOver ? 'bg-blue-50/50 ring-2 ring-blue-200 ring-inset' : ''}`}
       >
         {tasks.map((t) => (
-          <TaskCard key={t.id} task={t} onUpdate={onUpdate} onDelete={onDelete} />
+          <TaskCard key={t.id} task={t} onUpdate={onUpdate} onDelete={onDelete} isAdmin={isAdmin} />
         ))}
         {tasks.length === 0 && (
           <div className={`border-2 border-dashed rounded-ios p-4 text-center transition-colors ${isOver ? 'border-blue-300 bg-blue-50/30' : 'border-gray-150'}`}>
@@ -239,11 +244,12 @@ function AddMemberModal({ open, onClose, onAdded, projectId, existingMemberIds =
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [adding, setAdding] = useState(null);
+  const [successMsg, setSuccessMsg] = useState('');
 
   const results = rawResults.filter((u) => !existingMemberIds.includes(u.id));
 
   useEffect(() => {
-    if (!open) { setSearch(''); setRawResults([]); setError(''); setAdding(null); }
+    if (!open) { setSearch(''); setRawResults([]); setError(''); setAdding(null); setSuccessMsg(''); }
   }, [open]);
 
   useEffect(() => {
@@ -266,12 +272,15 @@ function AddMemberModal({ open, onClose, onAdded, projectId, existingMemberIds =
 
   async function add(user) {
     setAdding(user.id);
+    setSuccessMsg('');
     setRawResults((prev) => prev.filter((u) => u.id !== user.id));
     try {
       const res = await api.post(`/projects/${projectId}/members`, { user_id: user.id });
       onAdded(res.data.member);
+      setSuccessMsg(`${user.name} has been added to the team!`);
       setSearch('');
       setRawResults([]);
+      setTimeout(() => setSuccessMsg(''), 3500);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to add member');
       setRawResults((prev) => [...prev, user]);
@@ -285,7 +294,24 @@ function AddMemberModal({ open, onClose, onAdded, projectId, existingMemberIds =
 
   return (
     <Modal isOpen={open} onClose={onClose} title="Add Team Member" size="sm">
+      <style>{`
+        @keyframes toastSlideIn {
+          from { opacity: 0; transform: translateY(-8px) scale(0.96); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .toast-slide-in { animation: toastSlideIn 0.35s cubic-bezier(0.16,1,0.3,1) both; }
+      `}</style>
       <div className="space-y-3">
+        {/* Success toast */}
+        {successMsg && (
+          <div className="toast-slide-in flex items-center gap-2.5 p-3 bg-green-50 border border-green-200 rounded-ios">
+            <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6L4.8 9L10 3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </div>
+            <p className="text-sm font-semibold text-green-700">{successMsg}</p>
+          </div>
+        )}
+
         <div className="relative">
           <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
@@ -347,7 +373,7 @@ function AddMemberModal({ open, onClose, onAdded, projectId, existingMemberIds =
           </div>
         )}
 
-        {search.trim().length === 0 && (
+        {search.trim().length === 0 && !successMsg && (
           <p className="text-xs text-gray-400 text-center py-2">Start typing to search all team members</p>
         )}
       </div>
@@ -512,11 +538,11 @@ export default function ProjectDetail() {
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 bg-gray-100/80 p-1.5 rounded-[16px] w-fit overflow-x-auto max-w-full">
+      <div className="flex items-center gap-1.5 bg-gray-100/80 p-1.5 rounded-[16px] overflow-x-auto max-w-full -mx-1 px-1" style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
         {[{ key:'tasks',label:'Tasks',icon:CheckSquare,count:tasks.length},{ key:'documents',label:'Documents',icon:FileText,count:documents.length},{ key:'templates',label:'Templates',icon:Layout,count:templates.length},{ key:'members',label:'Members',icon:Users,count:project.members?.length}].map(({key,label,icon:Icon,count}) => (
           <button key={key} onClick={() => setTab(key)}
-            className={`flex items-center gap-2 px-4 py-2.5 text-[14px] font-semibold rounded-[12px] transition-all duration-300 whitespace-nowrap ${tab===key?'bg-white text-gray-900 shadow-[0_2px_8px_rgba(0,0,0,0.08)]':'text-gray-500 hover:text-gray-800 hover:bg-gray-200/50'}`}>
-            <Icon size={16} strokeWidth={2.5} className={tab===key ? 'text-blue-500' : 'text-gray-400'}/>{label}
+            className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 text-[13px] sm:text-[14px] font-semibold rounded-[12px] transition-all duration-300 whitespace-nowrap ${tab===key?'bg-white text-gray-900 shadow-[0_2px_8px_rgba(0,0,0,0.08)]':'text-gray-500 hover:text-gray-800 hover:bg-gray-200/50'}`}>
+            <Icon size={15} strokeWidth={2.5} className={tab===key ? 'text-blue-500' : 'text-gray-400'}/><span className="hidden sm:inline">{label}</span><span className="sm:hidden">{label.slice(0,4)}{label.length > 4 ? '.' : ''}</span>
             {count > 0 && <span className={`min-w-[20px] h-[20px] px-1.5 rounded-full text-[11px] font-bold flex items-center justify-center transition-colors ${tab===key ? 'bg-blue-50 text-blue-600' : 'bg-gray-200/80 text-gray-500'}`}>{count}</span>}
           </button>
         ))}
@@ -542,9 +568,9 @@ export default function ProjectDetail() {
               },
             }}
           >
-            <div className="flex gap-4 overflow-x-auto pb-4 items-start max-w-full" data-lenis-prevent style={{ minHeight: '200px' }}>
+            <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 items-start max-w-full snap-x snap-mandatory" data-lenis-prevent style={{ minHeight: '200px', WebkitOverflowScrolling: 'touch' }}>
               {STATUSES.map((s) => (
-                <TaskColumn key={s.key} status={s} tasks={tasksByStatus[s.key] || []} onUpdate={handleTaskUpdate} onDelete={handleTaskDelete}>
+                <TaskColumn key={s.key} status={s} tasks={tasksByStatus[s.key] || []} onUpdate={handleTaskUpdate} onDelete={handleTaskDelete} isAdmin={isAdmin}>
                   <button onClick={() => { setDefaultStatus(s.key); setShowTask(true); }} className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-blue-500 hover:bg-blue-50 rounded-md transition-all">
                     <Plus size={14} strokeWidth={2.5} />
                   </button>
@@ -558,6 +584,14 @@ export default function ProjectDetail() {
                     <GripVertical size={14} className="text-gray-300 mt-0.5" />
                     <p className="text-sm font-semibold text-gray-800 truncate">{activeDrag.title}</p>
                   </div>
+                  {isAdmin && activeDrag.assignee_name && (
+                    <div className="flex items-center gap-1.5 mt-2">
+                      <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                        <span className="text-[8px] font-bold text-white">{activeDrag.assignee_name.charAt(0)}</span>
+                      </div>
+                      <span className="text-[10px] font-medium text-gray-500">{activeDrag.assignee_name}</span>
+                    </div>
+                  )}
                 </div>
               ) : null}
             </DragOverlay>

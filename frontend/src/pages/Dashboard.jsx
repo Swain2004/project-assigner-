@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FolderKanban, CheckSquare, TrendingUp, Users, ArrowRight, Clock, Circle } from 'lucide-react';
+import { FolderKanban, CheckSquare, TrendingUp, Users, ArrowRight, Clock, Circle, CheckCircle2, CalendarDays } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import { getCached, setCached } from '../api/cache';
@@ -75,7 +75,7 @@ function StatCard({ icon: Icon, label, value, color, sublabel, to }) {
             {value}
           </span>
           {sublabel && (
-            <p className="text-[12px] text-gray-400 mt-1.5 font-medium">{sublabel}</p>
+            <p className="text-[14px] text-gray-500 mt-1.5 font-bold tracking-wide">{sublabel}</p>
           )}
         </div>
       </div>
@@ -226,11 +226,11 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard icon={FolderKanban} label="Active Projects" value={stats?.active_projects ?? 0} color="blue" to="/projects" />
         <StatCard icon={CheckSquare} label="My Tasks" value={stats?.my_tasks ?? 0} color="orange" sublabel="Pending" to="/tasks" />
-        <StatCard icon={TrendingUp} label="Completed" value={stats?.completed_tasks ?? 0} color="green" sublabel="Tasks done" />
+        <StatCard icon={CheckCircle2} label="Completed" value={stats?.completed_tasks ?? 0} color="green" sublabel="Tasks Done" />
         {user?.role === 'admin' ? (
           <StatCard icon={Users} label="Team Members" value={stats?.team_members ?? 0} color="purple" />
         ) : (
-          <StatCard icon={Circle} label="Completed" value={stats?.completed_tasks ?? 0} color="teal" sublabel="This month" />
+          <StatCard icon={CalendarDays} label="Completed" value={stats?.completed_tasks ?? 0} color="purple" sublabel="This Month" />
         )}
       </div>
 
@@ -276,11 +276,11 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="card shadow-apple-sm border-0 ring-1 ring-gray-100 overflow-hidden">
+        <div className="card shadow-apple-sm border-0 ring-1 ring-gray-100 overflow-hidden self-start">
           <div className="px-6 py-5 border-b border-gray-100/80 bg-gray-50/50">
             <h3 className="text-[17px] font-bold text-gray-900 tracking-tight">Recent Activity</h3>
           </div>
-          <div className="p-2 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 320px)' }} data-lenis-prevent>
+          <div className="p-2 overflow-y-auto max-h-[600px]" data-lenis-prevent>
             {activity.length === 0 ? (
               <div className="flex flex-col items-center py-8 text-center">
                 <TrendingUp size={28} className="text-gray-200 mb-2" strokeWidth={1.5} />

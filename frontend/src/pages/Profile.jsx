@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { User, Lock, Check, AlertCircle, Briefcase, Mail, Building2 } from 'lucide-react';
+import { User, Lock, Check, AlertCircle, Briefcase, Mail, Building2, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 
@@ -16,6 +16,9 @@ export default function Profile() {
   const { user, updateUser } = useAuth();
   const [profileForm, setProfileForm] = useState({ name: user?.name || '', department: user?.department || '' });
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [profileStatus, setProfileStatus] = useState(null);
   const [passwordStatus, setPasswordStatus] = useState(null);
   const [profileLoading, setProfileLoading] = useState(false);
@@ -50,6 +53,9 @@ export default function Profile() {
       setPasswordStatus({ success: false, message: err.response?.data?.message || 'Failed to change password' });
     } finally { setPasswordLoading(false); }
   }
+
+  const passwordsMatch = passwordForm.confirmPassword.length > 0 && passwordForm.newPassword === passwordForm.confirmPassword && passwordForm.newPassword.length >= 6;
+  const passwordsDontMatch = passwordForm.confirmPassword.length > 0 && passwordForm.newPassword !== passwordForm.confirmPassword;
 
   return (
     <div className="max-w-2xl mx-auto space-y-5 animate-fade-in">
@@ -120,22 +126,46 @@ export default function Profile() {
             <label className="label">Current Password</label>
             <div className="relative">
               <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input type="password" className="input-field pl-10" value={passwordForm.currentPassword} onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})} placeholder="Enter current password" required />
+              <input type={showCurrentPassword ? 'text' : 'password'} className="input-field pl-10 pr-11" value={passwordForm.currentPassword}
+                onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})} placeholder="Enter current password" required />
+              <button type="button" onClick={() => setShowCurrentPassword(s => !s)}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
+                {showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
           </div>
           <div>
             <label className="label">New Password</label>
             <div className="relative">
               <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input type="password" className="input-field pl-10" value={passwordForm.newPassword} onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})} placeholder="At least 6 characters" minLength={6} required />
+              <input type={showNewPassword ? 'text' : 'password'} className="input-field pl-10 pr-11" value={passwordForm.newPassword}
+                onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})} placeholder="At least 6 characters" minLength={6} required />
+              <button type="button" onClick={() => setShowNewPassword(s => !s)}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
+                {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
           </div>
           <div>
             <label className="label">Confirm New Password</label>
             <div className="relative">
               <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input type="password" className="input-field pl-10" value={passwordForm.confirmPassword} onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})} placeholder="Repeat new password" required />
+              <input type={showConfirmPassword ? 'text' : 'password'} className="input-field pl-10 pr-11" value={passwordForm.confirmPassword}
+                onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})} placeholder="Repeat new password" required />
+              <button type="button" onClick={() => setShowConfirmPassword(s => !s)}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
+                {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
+            {passwordsMatch && (
+              <div className="flex items-center gap-1.5 mt-2">
+                <CheckCircle size={14} className="text-green-500" />
+                <p className="text-xs text-green-600 font-semibold">Passwords match</p>
+              </div>
+            )}
+            {passwordsDontMatch && (
+              <p className="text-xs text-red-500 font-semibold mt-2">Passwords don't match</p>
+            )}
           </div>
           {passwordStatus && (
             <div className={`flex items-center gap-2 p-3 rounded-ios text-sm font-medium ${passwordStatus.success ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
