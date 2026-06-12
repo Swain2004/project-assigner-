@@ -74,8 +74,10 @@ function StatCard({ icon: Icon, label, value, color, sublabel, to }) {
           <span className={`text-[32px] sm:text-[42px] font-bold ${style.numberColor} tracking-tight leading-none`}>
             {value}
           </span>
-          {sublabel && (
+          {sublabel ? (
             <p className="text-[14px] text-gray-500 mt-1.5 font-bold tracking-wide">{sublabel}</p>
+          ) : (
+            <div className="mt-1.5 h-5" />
           )}
         </div>
       </div>
@@ -226,11 +228,11 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard icon={FolderKanban} label="Active Projects" value={stats?.active_projects ?? 0} color="blue" to="/projects" />
         <StatCard icon={CheckSquare} label="My Tasks" value={stats?.my_tasks ?? 0} color="orange" sublabel="Pending" to="/tasks" />
-        <StatCard icon={CheckCircle2} label="Completed" value={stats?.completed_tasks ?? 0} color="green" sublabel="Tasks Done" />
+        <StatCard icon={CheckCircle2} label="Completed" value={stats?.completed_tasks ?? 0} color="green" sublabel="Tasks Done" to="/tasks?status=done" />
         {user?.role === 'admin' ? (
-          <StatCard icon={Users} label="Team Members" value={stats?.team_members ?? 0} color="purple" />
+          <StatCard icon={Users} label="Team Members" value={stats?.team_members ?? 0} color="purple" to="/users" />
         ) : (
-          <StatCard icon={CalendarDays} label="Completed" value={stats?.completed_tasks ?? 0} color="purple" sublabel="This Month" />
+          <StatCard icon={CalendarDays} label="Completed" value={stats?.completed_tasks ?? 0} color="purple" sublabel="This Month" to="/tasks?status=done" />
         )}
       </div>
 

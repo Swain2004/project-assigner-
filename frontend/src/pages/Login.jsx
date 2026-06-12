@@ -155,7 +155,7 @@ export default function Login() {
       `}</style>
 
       {/* ━━━ LEFT: Form (centered) ━━━ */}
-      <div className="w-full lg:w-[45%] flex items-center justify-center min-h-screen px-8 md:px-16 lg:px-20 py-10">
+      <div className="w-full md:w-[50%] lg:w-[45%] flex items-center justify-center min-h-screen px-5 sm:px-8 md:px-12 lg:px-20 py-10">
         <div className="max-w-[380px] w-full">
           {/* Logo */}
           <div className="fade-in flex items-center gap-3 mb-10">
@@ -278,7 +278,7 @@ export default function Login() {
       </div>
 
       {/* ━━━ RIGHT: Photo ━━━ */}
-      <div className="hidden lg:block lg:w-[55%] relative overflow-hidden rounded-l-[28px]">
+      <div className="hidden md:block md:w-[50%] lg:w-[55%] relative overflow-hidden md:rounded-l-[24px] lg:rounded-l-[28px]">
         <img
           src="/office-building.png"
           alt="Modern office building"

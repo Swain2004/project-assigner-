@@ -29,9 +29,9 @@ function CreateUserModal({ open, onClose, onCreated }) {
   return (
     <Modal isOpen={open} onClose={onClose} title="Create User">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div><label className="label">Full Name *</label><input className="input-field" value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} placeholder="Full name" required /></div>
-        <div><label className="label">Email *</label><input type="email" className="input-field" value={form.email} onChange={(e) => setForm({...form, email: e.target.value})} placeholder="email@company.com" required /></div>
-        <div><label className="label">Password *</label><input type="password" className="input-field" value={form.password} onChange={(e) => setForm({...form, password: e.target.value})} placeholder="Min. 6 characters" minLength={6} required /></div>
+        <div><label className="label">Full Name <span className="text-red-500">*</span></label><input className="input-field" value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} placeholder="Full name" required /></div>
+        <div><label className="label">Email <span className="text-red-500">*</span></label><input type="email" className="input-field" value={form.email} onChange={(e) => setForm({...form, email: e.target.value})} placeholder="email@company.com" required /></div>
+        <div><label className="label">Password <span className="text-red-500">*</span></label><input type="password" className="input-field" value={form.password} onChange={(e) => setForm({...form, password: e.target.value})} placeholder="Min. 6 characters" minLength={6} required /></div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="label">Role</label>

@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { CheckSquare, Calendar, Plus, Search, Filter, Circle } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { CheckSquare, Calendar, Search, Circle } from 'lucide-react';
 import { format, isPast } from 'date-fns';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { getCached, setCached } from '../api/cache';
-import Modal from '../components/Modal';
 import AppleSelect from '../components/AppleSelect';
 
 const STATUS_STYLE = { todo:'bg-gray-100 text-gray-600', in_progress:'bg-blue-100 text-blue-600', review:'bg-orange-100 text-orange-600', done:'bg-green-100 text-green-600' };
@@ -82,11 +81,17 @@ function TaskRow({ task, onStatusChange, isAdmin }) {
 
 export default function Tasks() {
   const { user } = useAuth();
+  const location = useLocation();
   const [tasks, setTasks] = useState(() => getCached('/tasks') || []);
   const [projects, setProjects] = useState(() => getCached('/projects') || []);
   const [loading, setLoading] = useState(() => !getCached('/tasks'));
   const [search, setSearch] = useState('');
-  const [filters, setFilters] = useState({ status: 'all', priority: 'all', project: 'all', myTasks: false });
+  
+  // Read initial status filter from URL if present
+  const queryParams = new URLSearchParams(location.search);
+  const initialStatus = queryParams.get('status') || 'all';
+  const [filters, setFilters] = useState({ status: initialStatus, priority: 'all', project: 'all', myTasks: false });
+  
   const isAdmin = user?.role === 'admin';
 
   useEffect(() => {
@@ -197,3 +202,4 @@ export default function Tasks() {
     </div>
   );
 }
+

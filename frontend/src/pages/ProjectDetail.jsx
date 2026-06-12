@@ -43,23 +43,18 @@ function TaskCard({ task, onUpdate, onDelete, isAdmin }) {
   return (
     <div
       ref={setNodeRef}
-      className={`bg-white border border-gray-150 rounded-ios p-3.5 shadow-apple-sm group hover:shadow-apple transition-shadow w-full ${isDragging ? 'opacity-30' : ''}`}
+      {...attributes}
+      {...listeners}
+      className={`bg-white border border-gray-150 rounded-ios p-3.5 shadow-apple-sm group hover:shadow-apple transition-shadow w-full cursor-grab active:cursor-grabbing select-none ${isDragging ? 'opacity-30' : ''}`}
     >
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-start gap-1.5 flex-1">
-          <button
-            {...attributes}
-            {...listeners}
-            className="p-0.5 text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing flex-shrink-0 mt-0.5"
-          >
-            <GripVertical size={14} />
-          </button>
-          <p className="text-sm font-semibold text-gray-800 leading-snug flex-1">{task.title}</p>
-        </div>
+        <p className="text-sm font-semibold text-gray-800 leading-snug flex-1">{task.title}</p>
         <div className="relative flex-shrink-0">
           <button
             ref={menuBtnRef}
-            onClick={() => {
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
               if (!menu && menuBtnRef.current) {
                 const r = menuBtnRef.current.getBoundingClientRect();
                 setMenuPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
@@ -73,17 +68,19 @@ function TaskCard({ task, onUpdate, onDelete, isAdmin }) {
           {menu && (
             <div
               ref={menuRef}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
               style={{ position: 'fixed', zIndex: 9999, top: menuPos.top, right: menuPos.right }}
               className="w-40 bg-white/90 backdrop-blur-xl border border-gray-100 rounded-[14px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden py-1"
             >
               {STATUSES.map((s) => (
-                <button key={s.key} onClick={() => { onUpdate(task.id, { status: s.key }); setMenu(false); }}
+                <button key={s.key} onClick={(e) => { e.stopPropagation(); onUpdate(task.id, { status: s.key }); setMenu(false); }}
                   className={`w-full text-left px-3.5 py-2 text-xs font-medium hover:bg-gray-100/50 transition-colors ${task.status === s.key ? 'text-blue-500' : 'text-gray-700'}`}>
                   {s.label}
                 </button>
               ))}
               <div className="border-t border-gray-100/60 my-1" />
-              <button onClick={() => { onDelete(task.id); setMenu(false); }} className="w-full text-left px-3.5 py-2 text-xs font-medium text-red-500 hover:bg-red-50 transition-colors">Delete</button>
+              <button onClick={(e) => { e.stopPropagation(); onDelete(task.id); setMenu(false); }} className="w-full text-left px-3.5 py-2 text-xs font-medium text-red-500 hover:bg-red-50 transition-colors">Delete</button>
             </div>
           )}
         </div>
@@ -142,7 +139,7 @@ function TaskColumn({ status, tasks, onUpdate, onDelete, children, isAdmin }) {
   );
 }
 
-function CreateTaskModal({ open, onClose, onCreated, projectId, members, defaultStatus }) {
+function CreateTaskModal({ open, onClose, onCreated, projectId, members, defaultStatus, isAdmin }) {
   const [form, setForm] = useState({ title: '', description: '', status: 'todo', priority: 'medium', assigned_to: '', due_date: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -158,7 +155,7 @@ function CreateTaskModal({ open, onClose, onCreated, projectId, members, default
   return (
     <Modal isOpen={open} onClose={onClose} title="Create Task">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div><label className="label">Title *</label><input className="input-field" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Task title" required /></div>
+        <div><label className="label">Title <span className="text-red-500">*</span></label><input className="input-field" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Task title" required /></div>
         <div>
           <label className="label">Description <span className="text-gray-400 text-xs font-normal">— type @ to mention a team member</span></label>
           <MentionTextarea
@@ -182,9 +179,9 @@ function CreateTaskModal({ open, onClose, onCreated, projectId, members, default
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="label">Assign To</label>
-            <AppleSelect value={form.assigned_to} onChange={(e) => setForm({ ...form, assigned_to: e.target.value })} options={[{ value: '', label: 'Unassigned' }, ...members.map((m) => ({ value: m.id, label: m.name }))]} />
+            <AppleSelect value={form.assigned_to} onChange={(e) => setForm({ ...form, assigned_to: e.target.value })} options={[{ value: '', label: 'Unassigned' }, ...members.filter(m => isAdmin || m.role !== 'admin').map((m) => ({ value: m.id, label: m.name }))]} />
           </div>
-          <div><label className="label">Due Date</label><input type="date" className="input-field" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} /></div>
+          <div><label className="label">Due Date</label><input type="date" className="input-field" value={form.due_date} min={new Date().toISOString().split('T')[0]} onChange={(e) => setForm({ ...form, due_date: e.target.value })} /></div>
         </div>
         {error && <p className="text-sm text-red-500">{error}</p>}
         <div className="flex gap-3"><button type="button" onClick={onClose} className="btn-secondary flex-1">Cancel</button><button type="submit" disabled={loading} className="btn-primary flex-1">{loading ? 'Creating...' : 'Create'}</button></div>
@@ -710,7 +707,7 @@ export default function ProjectDetail() {
         </div>
       )}
 
-      <CreateTaskModal open={showTask} onClose={() => setShowTask(false)} onCreated={(t) => { const newTasks = [t, ...tasks]; setTasks(newTasks); updateCache(newTasks); }} projectId={id} members={project.members || []} defaultStatus={defaultStatus} />
+      <CreateTaskModal open={showTask} onClose={() => setShowTask(false)} onCreated={(t) => { const newTasks = [t, ...tasks]; setTasks(newTasks); updateCache(newTasks); }} projectId={id} members={project.members || []} defaultStatus={defaultStatus} isAdmin={isAdmin} />
       <UploadModal open={showUpload} onClose={() => setShowUpload(false)} onUploaded={(d) => setDocuments((p) => [d,...p])} projectId={id} />
       <AddMemberModal open={showAddMember} onClose={() => setShowAddMember(false)} onAdded={(m) => setProject((p) => ({...p, members: [...(p.members||[]), m]}))} projectId={id} existingMemberIds={project?.members?.map((m) => m.id) || []} />
 

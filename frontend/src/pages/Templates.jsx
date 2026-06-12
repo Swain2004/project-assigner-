@@ -101,7 +101,7 @@ function UploadTemplateModal({ open, onClose, onCreated }) {
     <Modal isOpen={open} onClose={onClose} title="Upload Template" size="md">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="label">Template Name *</label>
+          <label className="label">Template Name <span className="text-red-500">*</span></label>
           <input className="input-field" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Monthly Report Form" required />
         </div>
         <div>
@@ -109,7 +109,7 @@ function UploadTemplateModal({ open, onClose, onCreated }) {
           <textarea className="input-field resize-none" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What should users fill in this template?" />
         </div>
         <div>
-          <label className="label">Template File *</label>
+          <label className="label">Template File <span className="text-red-500">*</span></label>
           <FileDrop value={file} onChange={setFile} label="Drop your template file here or click to browse" />
         </div>
         {error && <p className="text-sm text-red-500">{error}</p>}
@@ -189,7 +189,7 @@ function UseTemplateModal({ open, onClose, template, onSubmitted, onDownload }) 
             <textarea className="input-field resize-none" rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Any notes about this submission..." />
           </div>
           <div>
-            <label className="label">Upload Your Filled File *</label>
+            <label className="label">Upload Your Filled File <span className="text-red-500">*</span></label>
             <FileDrop value={file} onChange={setFile} label="Drop your completed file here or click to browse" />
           </div>
           {error && <p className="text-sm text-red-500">{error}</p>}

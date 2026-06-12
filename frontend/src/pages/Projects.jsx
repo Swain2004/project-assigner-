@@ -179,7 +179,7 @@ function CreateProjectModal({ open, onClose, onCreated }) {
     <Modal isOpen={open} onClose={onClose} title="New Project" size="lg">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="label">Project Name *</label>
+          <label className="label">Project Name <span className="text-red-500">*</span></label>
           <input className="input-field" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Website Redesign" required />
         </div>
         <div>

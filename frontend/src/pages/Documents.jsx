@@ -85,7 +85,7 @@ function UploadModal({ open, onClose, onUploaded, projects }) {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="label">Project *</label>
+            <label className="label">Project <span className="text-red-500">*</span></label>
             <AppleSelect value={form.project_id} onChange={(e) => setForm({...form, project_id: e.target.value})} options={[{value: '', label: 'Select project...'}, ...projects.map((p) => ({value: p.id, label: p.name}))]} />
           </div>
           <div>
