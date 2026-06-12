@@ -58,18 +58,14 @@ function TaskCard({ task, onUpdate, onDelete, isAdmin }) {
               e.stopPropagation();
               if (!menu && menuBtnRef.current) {
                 const r = menuBtnRef.current.getBoundingClientRect();
-                const MENU_HEIGHT = 230;
-                // Use visualViewport for iOS Safari accuracy
+                const MENU_HEIGHT = 240;
                 const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-                const vvOffsetTop = window.visualViewport ? window.visualViewport.offsetTop : 0;
-                const spaceBelow = vh - (r.bottom - vvOffsetTop);
+                const spaceBelow = vh - r.bottom;
                 const rightOffset = Math.max(4, window.innerWidth - r.right);
-                let topPos;
-                if (spaceBelow < MENU_HEIGHT) {
-                  topPos = Math.max(8, r.top - MENU_HEIGHT - 4);
-                } else {
-                  topPos = r.bottom + 4;
-                }
+                // Default: open below the button; only flip up if clipped by bottom
+                const topPos = spaceBelow < MENU_HEIGHT
+                  ? Math.max(8, r.top - MENU_HEIGHT - 4)
+                  : r.bottom + 4;
                 setMenuPos({ top: topPos, right: rightOffset });
               }
               setMenu((m) => !m);
